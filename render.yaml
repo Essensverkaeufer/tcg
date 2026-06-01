@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: tcg-matchmaking
+    runtime: node
+    plan: starter
+    autoDeploy: true
+    buildCommand: npm ci --include=dev
+    startCommand: npm run start:realtime
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22.12.0"
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://tcg-two-phi.vercel.app
+      - key: REALTIME_ALLOWED_ORIGIN
+        value: https://tcg-two-phi.vercel.app
+      - key: REALTIME_SERVER_ID
+        value: prod-render-1
+      - key: REALTIME_TURN_MS
+        value: "90000"
+      - key: REALTIME_RECONNECT_MS
+        value: "60000"
