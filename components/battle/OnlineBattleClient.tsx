@@ -177,8 +177,8 @@ export function OnlineBattleClient() {
   return (
     <AuthGate>
       <main className="min-h-[calc(100vh-78px)] bg-slate-950 text-white">
-        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[1fr_300px]">
-          <section className="rounded-lg border border-white/10 bg-black/35 p-4">
+        <div className="mx-auto grid max-w-[1500px] gap-4 px-4 py-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <section className="min-w-0 rounded-lg border border-white/10 bg-black/35 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 className="text-3xl font-black">Online Battle</h1>
@@ -187,6 +187,8 @@ export function OnlineBattleClient() {
               <div className="flex flex-wrap gap-2">
                 {status === "queueing" ? (
                   <button type="button" onClick={leaveQueue} className="rounded-md border border-white/20 px-4 py-2 text-sm font-black">Leave Queue</button>
+                ) : status === "matched" ? (
+                  <button type="button" disabled className="rounded-md bg-emerald-500/20 px-4 py-2 text-sm font-black text-emerald-100">In Match</button>
                 ) : (
                   <button type="button" onClick={joinQueue} disabled={!accessToken || status === "connecting"} className="rounded-md bg-rose-500 px-4 py-2 text-sm font-black text-white disabled:opacity-40">Queue 1v1</button>
                 )}
@@ -195,7 +197,7 @@ export function OnlineBattleClient() {
             </div>
           </section>
 
-          <aside className="rounded-lg border border-white/10 bg-black/35 p-4 lg:row-span-3">
+          <aside className="min-w-0 rounded-lg border border-white/10 bg-black/35 p-4 xl:row-span-3">
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">Controls</h2>
             <div className="mt-3 grid gap-2">
               <button type="button" onClick={playSelected} disabled={!isYourTurn || !selectedInHand || !selectedIsYours} className="rounded-md bg-amber-300 px-3 py-2 text-sm font-black text-slate-950 disabled:opacity-40">
@@ -213,7 +215,7 @@ export function OnlineBattleClient() {
             </div>
             <div className="mt-5 rounded-md bg-white/5 p-3 text-sm">
               <div className="font-black">Status: {status}</div>
-              <div className="mt-1 text-slate-400">Server: {realtimeUrl}</div>
+              <div className="mt-1 break-words text-slate-400">Server: {realtimeUrl || "not configured"}</div>
               {view ? <div className="mt-1 text-slate-400">Turn {view.turn}: {activePlayer?.displayName}</div> : null}
             </div>
             {selected ? (
@@ -226,7 +228,7 @@ export function OnlineBattleClient() {
           </aside>
 
           {view && opponent && you ? (
-            <section className="grid gap-4">
+            <section className="grid min-w-0 gap-4">
               <PlayerZone title={opponent.displayName} player={opponent} selectedId={selectedId} active={view.activePlayerId === opponent.playerId} onChoose={choose} />
               <div className="rounded-lg border border-fuchsia-500/30 bg-black/45 p-4 text-center shadow-xl shadow-fuchsia-950/30">
                 <div className="text-2xl font-black">{view.phase === "FINISHED" ? finishedText(view) : `${activePlayer?.displayName}'s Turn`}</div>
@@ -250,21 +252,21 @@ export function OnlineBattleClient() {
 
 function PlayerZone({ title, player, selectedId, active, onChoose }: { title: string; player: MatchView["players"][number]; selectedId: string; active: boolean; onChoose: (card: CardInstance | HiddenCard) => void }) {
   return (
-    <section className={clsx("rounded-lg border bg-black/35 p-3", active ? "border-amber-300/70" : "border-white/10")}>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
+    <section className={clsx("min-w-0 overflow-hidden rounded-lg border bg-black/35 p-3", active ? "border-amber-300/70" : "border-white/10")}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="text-lg font-black">{title}</h2>
           <p className="text-xs font-bold text-slate-400">Deck {player.deckCount} | Hand {player.handCount} | Graveyard {player.graveyard.length}</p>
         </div>
-        <CardButton card={player.leader} selected={selectedId === player.leader.instanceId} onChoose={onChoose} leader />
+        <LeaderButton card={player.leader} selected={selectedId === player.leader.instanceId} onChoose={onChoose} />
       </div>
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-5 gap-2">
         {player.board.map((card) => <CardButton key={card.instanceId} card={card} selected={selectedId === card.instanceId} onChoose={onChoose} />)}
         {Array.from({ length: Math.max(0, 5 - player.board.length) }).map((_, index) => (
-          <div key={index} className="grid min-h-36 place-items-center rounded-lg border border-dashed border-white/10 text-xs font-black uppercase text-white/20">Empty</div>
+          <div key={index} className="grid h-32 min-w-0 place-items-center rounded-lg border border-dashed border-white/10 text-[10px] font-black uppercase text-white/20 sm:h-36">Empty</div>
         ))}
       </div>
-      <div className="mt-3 flex gap-3 overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-3">
+      <div className="mt-3 flex max-w-full gap-2 overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-3 pb-4">
         {player.hand.length ? player.hand.map((card) => <CardButton key={card.instanceId} card={card} selected={!isHiddenCard(card) && selectedId === card.instanceId} onChoose={onChoose} hand />) : (
           <div className="grid min-h-32 flex-1 place-items-center text-sm font-bold text-slate-500">No cards in hand</div>
         )}
@@ -273,26 +275,52 @@ function PlayerZone({ title, player, selectedId, active, onChoose }: { title: st
   );
 }
 
-function CardButton({ card, selected, leader, hand, onChoose }: { card: CardInstance | HiddenCard; selected: boolean; leader?: boolean; hand?: boolean; onChoose: (card: CardInstance | HiddenCard) => void }) {
+function LeaderButton({ card, selected, onChoose }: { card: CardInstance; selected: boolean; onChoose: (card: CardInstance) => void }) {
+  return (
+    <button type="button" onClick={() => onChoose(card)} aria-label={`Select ${card.template.name}`} className="w-full max-w-sm min-w-0 text-left sm:w-80">
+      <article className={clsx("grid grid-cols-[76px_minmax(0,1fr)] overflow-hidden rounded-lg border bg-slate-950 shadow-xl", selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
+        <div className="relative h-24 bg-white/10">
+          <div className="absolute left-1 top-1 z-10 rounded-full bg-black/80 px-2 py-1 text-[10px] font-black text-amber-100">A{card.currentAura}</div>
+          {card.template.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={card.template.imageUrl} alt="" className="h-full w-full object-cover" />
+          ) : <div className="grid h-full place-items-center p-2 text-center text-[10px] font-black uppercase text-slate-400">{card.template.name}</div>}
+        </div>
+        <div className="min-w-0 p-2">
+          <div className="truncate text-sm font-black">{card.template.name}</div>
+          <div className="text-[10px] font-black uppercase text-amber-200">Leader</div>
+          <div className="mt-2 grid grid-cols-4 gap-1 text-center text-[11px] font-black">
+            <span className="rounded bg-orange-500/80 py-1">{card.currentAttack}</span>
+            <span className="rounded bg-rose-600/80 py-1">{Math.max(0, card.currentHealth)}</span>
+            <span className="rounded bg-slate-700 py-1">{card.currentSize}</span>
+            <span className="rounded bg-violet-600/80 py-1">E{getCardCost(card.template)}</span>
+          </div>
+        </div>
+      </article>
+    </button>
+  );
+}
+
+function CardButton({ card, selected, hand, onChoose }: { card: CardInstance | HiddenCard; selected: boolean; hand?: boolean; onChoose: (card: CardInstance | HiddenCard) => void }) {
   if (isHiddenCard(card)) {
     return (
-      <div className="grid h-36 w-28 shrink-0 place-items-center rounded-lg border border-rose-400/40 bg-slate-950 text-xs font-black uppercase text-rose-200 shadow-lg">
+      <div className="grid h-32 w-24 shrink-0 place-items-center rounded-lg border border-rose-400/40 bg-slate-950 text-[10px] font-black uppercase text-rose-200 shadow-lg sm:h-36 sm:w-28">
         Hidden
       </div>
     );
   }
 
   return (
-    <button type="button" onClick={() => onChoose(card)} className={clsx("shrink-0 text-left transition hover:-translate-y-1", hand ? "w-32" : "w-full", leader && "w-36")}>
+    <button type="button" onClick={() => onChoose(card)} aria-label={`Select ${card.template.name}`} className={clsx("min-w-0 shrink-0 text-left transition hover:-translate-y-1", hand ? "w-28 sm:w-32" : "w-full")}>
       <article className={clsx("relative overflow-hidden rounded-lg border-2 bg-slate-950 shadow-xl", selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
-        <div className="absolute left-1 top-1 z-10 rounded-full bg-black/80 px-2 py-1 text-xs font-black text-amber-100">A{card.currentAura}</div>
+        <div className="absolute left-1 top-1 z-10 rounded-full bg-black/80 px-1.5 py-0.5 text-[10px] font-black text-amber-100">A{card.currentAura}</div>
         {card.template.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.template.imageUrl} alt={card.template.name} className="h-24 w-full object-cover" />
-        ) : <div className="grid h-24 place-items-center bg-white/10 p-2 text-center text-xs font-black uppercase text-slate-400">{card.template.name}</div>}
+          <img src={card.template.imageUrl} alt="" className={clsx("w-full object-cover", hand ? "h-20 sm:h-24" : "h-16 sm:h-20")} />
+        ) : <div className={clsx("grid place-items-center bg-white/10 p-2 text-center text-[10px] font-black uppercase text-slate-400", hand ? "h-20 sm:h-24" : "h-16 sm:h-20")}>{card.template.name}</div>}
         <div className="p-2">
-          <div className="truncate text-sm font-black">{card.template.name}</div>
-          <div className="mt-2 grid grid-cols-4 gap-1 text-center text-xs font-black">
+          <div className="min-w-0 truncate text-[11px] font-black sm:text-xs">{card.template.name}</div>
+          <div className="mt-2 grid grid-cols-4 gap-1 text-center text-[10px] font-black">
             <span className="rounded bg-orange-500/80 py-1">{card.currentAttack}</span>
             <span className="rounded bg-rose-600/80 py-1">{Math.max(0, card.currentHealth)}</span>
             <span className="rounded bg-slate-700 py-1">{card.currentSize}</span>
