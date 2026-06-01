@@ -1,0 +1,331 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          username: string;
+          avatar_path: string | null;
+          avatar_url: string | null;
+          bio: string | null;
+          coins: number;
+          wins: number;
+          losses: number;
+          matches_played: number;
+          packs_opened: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          username: string;
+          avatar_path?: string | null;
+          avatar_url?: string | null;
+          bio?: string | null;
+          coins?: number;
+          wins?: number;
+          losses?: number;
+          matches_played?: number;
+          packs_opened?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Relationships: [];
+      };
+      card_templates: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string;
+          rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "MYTHIC" | "ULTRA_LEGENDARY";
+          card_type: "CHARACTER" | "BUILDING" | "ITEM" | "LEADER";
+          attack: number;
+          health: number;
+          size: number;
+          aura: number;
+          image_url: string;
+          flavor_text: string | null;
+          ability_data: Json;
+          balance_version: string;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["card_templates"]["Row"]> & {
+          slug: string;
+          name: string;
+          description: string;
+          rarity: Database["public"]["Tables"]["card_templates"]["Row"]["rarity"];
+          card_type: Database["public"]["Tables"]["card_templates"]["Row"]["card_type"];
+        };
+        Update: Partial<Database["public"]["Tables"]["card_templates"]["Insert"]>;
+        Relationships: [];
+      };
+      user_card_collection: {
+        Row: {
+          id: string;
+          user_id: string;
+          card_template_id: string;
+          quantity: number;
+          first_owned_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          card_template_id: string;
+          quantity?: number;
+          first_owned_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_card_collection"]["Insert"]>;
+        Relationships: [];
+      };
+      pack_openings: {
+        Row: {
+          id: string;
+          user_id: string;
+          pack_slug: string;
+          cards: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          pack_slug: string;
+          cards?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["pack_openings"]["Insert"]>;
+        Relationships: [];
+      };
+      decks: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["decks"]["Insert"]>;
+        Relationships: [];
+      };
+      deck_cards: {
+        Row: {
+          id: string;
+          deck_id: string;
+          card_template_id: string;
+          quantity: number;
+        };
+        Insert: {
+          id?: string;
+          deck_id: string;
+          card_template_id: string;
+          quantity: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["deck_cards"]["Insert"]>;
+        Relationships: [];
+      };
+      currency_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          reason: "DAILY_LOGIN" | "MATCH_WIN" | "MATCH_LOSS" | "MATCH_DRAW" | "PACK_PURCHASE" | "ADMIN_GRANT";
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          reason: Database["public"]["Tables"]["currency_transactions"]["Row"]["reason"];
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["currency_transactions"]["Insert"]>;
+        Relationships: [];
+      };
+      matchmaking_tickets: {
+        Row: {
+          id: string;
+          user_id: string;
+          deck_id: string;
+          status: "QUEUED" | "MATCHED" | "CANCELLED" | "EXPIRED";
+          region: string;
+          server_id: string | null;
+          matched_match_id: string | null;
+          created_at: string;
+          heartbeat_at: string;
+          matched_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          deck_id: string;
+          status?: Database["public"]["Tables"]["matchmaking_tickets"]["Row"]["status"];
+          region?: string;
+          server_id?: string | null;
+          matched_match_id?: string | null;
+          created_at?: string;
+          heartbeat_at?: string;
+          matched_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["matchmaking_tickets"]["Insert"]>;
+        Relationships: [];
+      };
+      matches: {
+        Row: {
+          id: string;
+          status: "QUEUED" | "ACTIVE" | "FINISHED" | "CANCELLED";
+          winner_id: string | null;
+          final_state: Json | null;
+          server_id: string | null;
+          current_turn: number;
+          active_player_id: string | null;
+          state_snapshot: Json | null;
+          finish_reason: string | null;
+          reward_granted_at: string | null;
+          created_at: string;
+          started_at: string | null;
+          finished_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          status?: Database["public"]["Tables"]["matches"]["Row"]["status"];
+          winner_id?: string | null;
+          final_state?: Json | null;
+          server_id?: string | null;
+          current_turn?: number;
+          active_player_id?: string | null;
+          state_snapshot?: Json | null;
+          finish_reason?: string | null;
+          reward_granted_at?: string | null;
+          created_at?: string;
+          started_at?: string | null;
+          finished_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["matches"]["Insert"]>;
+        Relationships: [];
+      };
+      match_players: {
+        Row: {
+          id: string;
+          match_id: string;
+          user_id: string;
+          deck_id: string | null;
+          seat: number;
+          result: "WIN" | "LOSS" | "DRAW" | null;
+          coins_earned: number;
+          connection_state: "ONLINE" | "OFFLINE" | "DISCONNECTED";
+          deck_snapshot: Json | null;
+          disconnected_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          user_id: string;
+          deck_id?: string | null;
+          seat: number;
+          result?: Database["public"]["Tables"]["match_players"]["Row"]["result"];
+          coins_earned?: number;
+          connection_state?: Database["public"]["Tables"]["match_players"]["Row"]["connection_state"];
+          deck_snapshot?: Json | null;
+          disconnected_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["match_players"]["Insert"]>;
+        Relationships: [];
+      };
+      match_action_logs: {
+        Row: {
+          id: string;
+          match_id: string;
+          user_id: string | null;
+          action: string;
+          payload: Json;
+          state_hash: string | null;
+          action_seq: number | null;
+          client_action_id: string | null;
+          resolved_state_hash: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          user_id?: string | null;
+          action: string;
+          payload?: Json;
+          state_hash?: string | null;
+          action_seq?: number | null;
+          client_action_id?: string | null;
+          resolved_state_hash?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["match_action_logs"]["Insert"]>;
+        Relationships: [];
+      };
+      match_events: {
+        Row: {
+          id: string;
+          match_id: string;
+          event_type: string;
+          message: string;
+          payload: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          event_type: string;
+          message: string;
+          payload?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["match_events"]["Insert"]>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: {
+      grant_pack_opening: {
+        Args: {
+          p_user_id: string;
+          p_pack_slug: string;
+          p_price: number;
+          p_card_template_ids: string[];
+        };
+        Returns: Array<{
+          coins: number;
+          packs_opened: number;
+        }>;
+      };
+      finish_multiplayer_match: {
+        Args: {
+          p_match_id: string;
+          p_winner_id: string | null;
+          p_finish_reason: string;
+          p_winner_reward?: number;
+          p_loser_reward?: number;
+          p_draw_reward?: number;
+        };
+        Returns: Array<{
+          match_id: string;
+          rewards_granted: boolean;
+        }>;
+      };
+    };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};

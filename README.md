@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cards and Pedophiles
 
-## Getting Started
+Local prototype framework for a browser-based custom trading card game. The current build focuses on clean architecture for cards, packs, decks, card stats, server-authoritative match logic, and future real-time multiplayer.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Auth and Postgres
+- Socket.IO server module for 1v1 match rooms
+
+## Setup
+
+```bash
+npm install
+copy .env.example .env.local
+npm run dev
+npm run dev:realtime
+```
+
+## Environment
+
+```text
+NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="your-sb-publishable-key"
+SUPABASE_SECRET_KEY="your-server-only-sb-secret-key"
+NEXT_PUBLIC_SUPABASE_AVATAR_BUCKET="profile-pictures"
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+NEXT_PUBLIC_REALTIME_URL="http://localhost:3001"
+REALTIME_ALLOWED_ORIGIN="http://localhost:3000"
+REALTIME_SERVER_ID="local-dev"
+SOCKET_PORT="3001"
+```
+
+## Supabase
+
+The Supabase setup lives in `supabase/migrations/`. Run the migrations in number order, then run `supabase/seed-cards.sql`.
+Migration `0007_repair_online_game_systems.sql` is idempotent and repairs older online projects that are missing pack/deck/currency tables, storage buckets, or the current `aura` column.
+Migration `0008_multiplayer_closed_alpha.sql` adds the closed-alpha multiplayer queue, match snapshots, match events, action logs, and idempotent match reward RPC.
+
+Players use username and password in the UI. The app maps usernames to internal Supabase Auth login IDs; passwords are not stored in app tables.
+
+## Project Map
+
+- `supabase/migrations` stores users, profiles, cards, collections, decks, pack openings, and currency.
+- `supabase/seed-cards.sql` seeds the card library.
+- `lib/game/cards.ts` is the card catalog entry point for the real card list.
+- `lib/game/abilities/engine.ts` resolves trigger, activated, passive-shaped, conditional, and targeted ability definitions.
+- `lib/game/packs/openPack.ts` implements 5-card gacha packs with weighted rarity rolls and no guaranteed drops.
+- `lib/game/decks/validateDeck.ts` enforces minimum deck size, Leader count, copy limits, and Legendary limits.
+- `lib/game/match/state.ts` creates and validates match state.
+- `lib/game/match/view.ts` filters match state so each player only sees their own hidden information.
+- `server/socket/index.ts` runs the authoritative Socket.IO matchmaking and match room server.
+- `app/*` contains the first-pass UI screens requested in the prototype brief.
+
+## Closed Alpha Multiplayer
+
+Start the web app and realtime server in separate terminals:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:realtime
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The main `/battle` route is now the online queue. `/battle/local` keeps the local hot-seat sandbox for quick testing. The realtime server verifies Supabase access tokens, loads each player's active legal deck from Supabase, owns the match state, filters hidden hands/decks per player, logs actions, handles concede/disconnect, and finalizes rewards through `finish_multiplayer_match`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+For production, deploy the Next.js app to Vercel and run the realtime server on an always-on Node host with `npm run start:realtime`. Set the host's `PORT` env normally; the server also exposes `/health` for readiness checks.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run checks before testing online:
 
-## Learn More
+```bash
+npm run lint
+npm run test:engine
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Expansion Notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Add new friend cards by creating a `CardTemplate` with ability JSON. The ability engine is intentionally data-driven so future unique effects can be registered in one place instead of hardcoded in UI components.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The client should keep sending intents only. Currency, pack rewards, deck legality, damage, ability effects, card stat changes, and wins/losses should stay validated on the server.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) after `npm run dev`.
