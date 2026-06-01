@@ -2,7 +2,7 @@ services:
   - type: web
     name: tcg-matchmaking
     runtime: node
-    plan: starter
+    plan: free
     autoDeploy: true
     buildCommand: npm ci --include=dev
     startCommand: npm run start:realtime
