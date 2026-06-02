@@ -71,6 +71,32 @@ function coinUnit(slug: string): CardTemplate {
   };
 }
 
+function cooldownUnit(slug: string): CardTemplate {
+  return {
+    slug,
+    name: slug,
+    description: "Cooldown unit",
+    flavorText: "",
+    rarity: "RARE",
+    cardType: "CHARACTER",
+    attack: 1,
+    health: 2,
+    size: 1,
+    aura: 0,
+    imageUrl: "",
+    abilityData: [
+      {
+        id: `${slug}-cooldown`,
+        label: "Cooldown Shot",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        cooldownTurns: 2,
+        effects: [{ type: "DAMAGE", target: "ENEMY_CHARACTER", amount: 1 }],
+      },
+    ],
+  };
+}
+
 function building(slug: string, attack = 0, health = 3): CardTemplate {
   return {
     slug,
@@ -220,5 +246,44 @@ coinTailsState = applyAction(coinTailsState, {
 });
 assert.equal(coinTailsState.messages.includes("50/50 landed tails."), true, "coin flip should report tails");
 assert.equal(coinTailsState.players[0].graveyard.some((card) => card.template.slug === "coin-tails-unit"), true, "tails should destroy the source");
+
+let cooldownState = createMatchState(
+  "cooldown",
+  { id: "a", name: "A", deck: [leader, cooldownUnit("cooldown-unit"), ...Array.from({ length: 9 }, (_, index) => unit(`a-cooldown-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("cooldown-target", 1, 5), ...Array.from({ length: 9 }, (_, index) => unit(`b-cooldown-extra-${index}`))] },
+  { seed: "cooldown-seed", deterministic: true },
+);
+const cooldownSource = cooldownState.players[0].hand.find((card) => card.template.slug === "cooldown-unit")!;
+cooldownState.players[0].hand = cooldownState.players[0].hand.filter((card) => card.instanceId !== cooldownSource.instanceId);
+cooldownSource.zone = "BOARD";
+cooldownSource.enteredTurn = 0;
+cooldownState.players[0].board.push(cooldownSource);
+const cooldownTarget = cooldownState.players[1].hand.find((card) => card.template.slug === "cooldown-target")!;
+cooldownState.players[1].hand = cooldownState.players[1].hand.filter((card) => card.instanceId !== cooldownTarget.instanceId);
+cooldownTarget.zone = "BOARD";
+cooldownState.players[1].board.push(cooldownTarget);
+cooldownState = applyAction(cooldownState, {
+  type: "USE_ABILITY",
+  playerId: cooldownState.players[0].playerId,
+  sourceInstanceId: cooldownSource.instanceId,
+  abilityId: "cooldown-unit-cooldown",
+});
+assert.equal(cooldownState.players[0].board[0].abilityCooldowns["cooldown-unit-cooldown"], 3, "cooldown should be stored against the source ability");
+cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[0].playerId });
+cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[1].playerId });
+assert.deepEqual(validateAction(cooldownState, {
+  type: "USE_ABILITY",
+  playerId: cooldownState.players[0].playerId,
+  sourceInstanceId: cooldownState.players[0].board[0].instanceId,
+  abilityId: "cooldown-unit-cooldown",
+}), { ok: false, reason: "Ability is on cooldown for 1 more turn(s)." }, "cooldown should still block on the next owner turn");
+cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[0].playerId });
+cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[1].playerId });
+assert.equal(validateAction(cooldownState, {
+  type: "USE_ABILITY",
+  playerId: cooldownState.players[0].playerId,
+  sourceInstanceId: cooldownState.players[0].board[0].instanceId,
+  abilityId: "cooldown-unit-cooldown",
+}).ok, true, "cooldown should expire after the configured turns pass");
 
 console.log("battle engine tests passed");

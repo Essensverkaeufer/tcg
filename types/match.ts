@@ -16,6 +16,7 @@ export type CardInstance = {
   exhausted: boolean;
   shielded: boolean;
   activatedThisTurn: string[];
+  abilityCooldowns: Record<string, number>;
   attachedItems: CardInstance[];
   blindedUntilTurn?: number;
   stunnedUntilTurn?: number;

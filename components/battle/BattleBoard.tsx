@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Activity, BookOpen, Heart, RotateCcw, Skull, Sparkles, Timer } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { cardCatalog } from "@/lib/game/cards";
 import { validateDeck } from "@/lib/game/decks/validateDeck";
 import { cardRowToTemplate } from "@/lib/game/mapping";
@@ -206,6 +207,8 @@ export function BattleBoard() {
   function beginAbility(ability: AbilityDefinition) {
     if (!state || !selected || !selectedOnBoard) return setNotice("Select one of your board cards first.");
     if (selected.activatedThisTurn.includes(ability.id)) return setNotice("That ability was already used this turn.");
+    const cooldownRemaining = getAbilityCooldownRemaining(selected, ability.id, state.turn);
+    if (cooldownRemaining > 0) return setNotice(`That ability is on cooldown for ${cooldownRemaining} more turn(s).`);
     setPendingAbilityId(ability.id);
     if (ability.requiresTarget) {
       setMode("ability");
@@ -468,17 +471,20 @@ function ControlPanel({
             {selected?.template.cardType === "ITEM" ? "Equip Item" : "Play"}{selectedInHand && selected ? ` (${getCardCost(selected.template)}E)` : ""}
           </button>
           <button type="button" onClick={onAttack} disabled={!selectedCanAttack || state.phase === "FINISHED"} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black text-white disabled:opacity-40">Attack</button>
-          {activatedAbilities.length ? activatedAbilities.map((ability) => (
-            <button
-              key={ability.id}
-              type="button"
-              onClick={() => onAbility(ability)}
-              disabled={!selectedIsActiveCard || !selectedOnBoard || selected?.activatedThisTurn.includes(ability.id) || (selected?.stunnedUntilTurn ?? 0) >= state.turn || state.phase === "FINISHED"}
-              className="rounded-md bg-violet-500 px-3 py-2 text-sm font-black text-white disabled:opacity-40"
-            >
-              Use {ability.label}
-            </button>
-          )) : <button type="button" disabled className="rounded-md bg-white/10 px-3 py-2 text-sm font-black text-white/40">No Ability</button>}
+          {activatedAbilities.length ? activatedAbilities.map((ability) => {
+            const cooldownRemaining = selected ? getAbilityCooldownRemaining(selected, ability.id, state.turn) : 0;
+            return (
+              <button
+                key={ability.id}
+                type="button"
+                onClick={() => onAbility(ability)}
+                disabled={!selectedIsActiveCard || !selectedOnBoard || selected?.activatedThisTurn.includes(ability.id) || cooldownRemaining > 0 || (selected?.stunnedUntilTurn ?? 0) >= state.turn || state.phase === "FINISHED"}
+                className="rounded-md bg-violet-500 px-3 py-2 text-sm font-black text-white disabled:opacity-40"
+              >
+                Use {ability.label}{cooldownRemaining > 0 ? ` (CD ${cooldownRemaining})` : ""}
+              </button>
+            );
+          }) : <button type="button" disabled className="rounded-md bg-white/10 px-3 py-2 text-sm font-black text-white/40">No Ability</button>}
           <button type="button" onClick={onCancel} disabled={mode === "inspect"} className="rounded-md border border-white/15 px-3 py-2 text-sm font-black text-white disabled:opacity-40">Cancel</button>
           <button type="button" onClick={onRestart} className="inline-flex items-center justify-center gap-2 rounded-md border border-white/15 px-3 py-2 text-sm font-black text-white">
             <RotateCcw className="h-4 w-4" />

@@ -49,6 +49,7 @@ export function resolveTriggeredAbilities(state: MatchState, event: AbilityEvent
     if (!conditionsPass(nextState, ability, event.controllerId)) continue;
     if (ability.oncePerGame && hasUsedOncePerGame(nextState, event.controllerId, ability.id)) continue;
     if (ability.trigger === "ACTIVATED" && source.activatedThisTurn.includes(ability.id)) continue;
+    if (ability.trigger === "ACTIVATED" && getAbilityCooldownRemaining(source, ability.id, nextState.turn) > 0) continue;
 
     for (const effect of ability.effects) {
       const result = applyEffect(nextState, effect, event, ability);
@@ -63,7 +64,14 @@ export function resolveTriggeredAbilities(state: MatchState, event: AbilityEvent
 
     if (ability.trigger === "ACTIVATED") {
       const updatedSource = findCard(nextState, source.instanceId);
-      updatedSource?.activatedThisTurn.push(ability.id);
+      if (updatedSource) {
+        updatedSource.activatedThisTurn.push(ability.id);
+        const cooldownTurns = Math.max(0, ability.cooldownTurns ?? 0);
+        if (cooldownTurns > 0) {
+          updatedSource.abilityCooldowns ??= {};
+          updatedSource.abilityCooldowns[ability.id] = nextState.turn + cooldownTurns;
+        }
+      }
     }
   }
 
@@ -226,6 +234,11 @@ export function drawCards(player: MatchPlayerState, amount = 1) {
     drawn += 1;
   }
   return drawn;
+}
+
+export function getAbilityCooldownRemaining(card: CardInstance, abilityId: string, currentTurn: number) {
+  const cooldownUntilTurn = card.abilityCooldowns?.[abilityId] ?? 0;
+  return Math.max(0, cooldownUntilTurn - currentTurn + 1);
 }
 
 export function sweepDeadCards(state: MatchState) {

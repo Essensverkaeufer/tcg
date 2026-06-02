@@ -75,6 +75,7 @@ export type AbilityDefinition = {
   trigger: AbilityTrigger;
   timing?: "BEFORE" | "AFTER";
   oncePerGame?: boolean;
+  cooldownTurns?: number;
   requiresTarget?: boolean;
   conditions?: AbilityCondition[];
   effects: AbilityEffect[];

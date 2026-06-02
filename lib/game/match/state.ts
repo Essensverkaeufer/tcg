@@ -1,4 +1,4 @@
-import { dealDamage, drawCards, findCard, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
+import { dealDamage, drawCards, findCard, getAbilityCooldownRemaining, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
 import type { CardTemplate } from "@/types/cards";
 import type { CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
 
@@ -104,6 +104,8 @@ export function validateAction(state: MatchState, action: MatchAction): Validati
     const ability = source.template.abilityData.find((entry) => entry.id === action.abilityId);
     if (!ability || ability.trigger !== "ACTIVATED") return { ok: false, reason: "Card has no activated ability." };
     if (source.activatedThisTurn.includes(ability.id)) return { ok: false, reason: "Ability was already used this turn." };
+    const cooldownRemaining = getAbilityCooldownRemaining(source, ability.id, state.turn);
+    if (cooldownRemaining > 0) return { ok: false, reason: `Ability is on cooldown for ${cooldownRemaining} more turn(s).` };
     if ((source.stunnedUntilTurn ?? 0) >= state.turn) return { ok: false, reason: "Card is stunned." };
     const targetError = getAbilityTargetError(state, ability, action.playerId, action.targetInstanceId);
     if (targetError) return { ok: false, reason: targetError };
@@ -341,6 +343,7 @@ function instantiateCard(template: CardTemplate, ownerId: string, zone: CardInst
     exhausted: false,
     shielded: false,
     activatedThisTurn: [],
+    abilityCooldowns: {},
     attachedItems: [],
     enteredTurn: 0,
   };

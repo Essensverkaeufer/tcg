@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { isHiddenCard, type HiddenCard, type MatchView } from "@/lib/game/match/view";
 import { getCardCost } from "@/lib/game/match/state";
 import type { AbilityDefinition } from "@/types/cards";
@@ -155,6 +156,11 @@ export function OnlineBattleClient() {
 
   function beginAbility(ability: AbilityDefinition) {
     if (!view || !selected || !selectedOnBoard || !isYourTurn) return;
+    const cooldownRemaining = getAbilityCooldownRemaining(selected, ability.id, view.turn);
+    if (cooldownRemaining > 0) {
+      setMessage(`${ability.label} is on cooldown for ${cooldownRemaining} more turn(s).`);
+      return;
+    }
     if (ability.requiresTarget) {
       setPendingAbilityId(ability.id);
       setTargetMode("ability");
@@ -204,11 +210,14 @@ export function OnlineBattleClient() {
                 Play{selectedInHand && selected ? ` (${getCardCost(selected.template)}E)` : ""}
               </button>
               <button type="button" onClick={beginAttack} disabled={!isYourTurn || !selectedOnBoard || !selectedIsYours} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black disabled:opacity-40">Attack</button>
-              {activatedAbilities.length ? activatedAbilities.map((ability) => (
-                <button key={ability.id} type="button" onClick={() => beginAbility(ability)} disabled={!isYourTurn || !selectedOnBoard || !selectedIsYours} className="rounded-md bg-violet-500 px-3 py-2 text-sm font-black disabled:opacity-40">
-                  Use {ability.label}
-                </button>
-              )) : <button type="button" disabled className="rounded-md bg-white/10 px-3 py-2 text-sm font-black text-white/40">No Ability</button>}
+              {activatedAbilities.length ? activatedAbilities.map((ability) => {
+                const cooldownRemaining = selected && view ? getAbilityCooldownRemaining(selected, ability.id, view.turn) : 0;
+                return (
+                  <button key={ability.id} type="button" onClick={() => beginAbility(ability)} disabled={!isYourTurn || !selectedOnBoard || !selectedIsYours || cooldownRemaining > 0} className="rounded-md bg-violet-500 px-3 py-2 text-sm font-black disabled:opacity-40">
+                    Use {ability.label}{cooldownRemaining > 0 ? ` (CD ${cooldownRemaining})` : ""}
+                  </button>
+                );
+              }) : <button type="button" disabled className="rounded-md bg-white/10 px-3 py-2 text-sm font-black text-white/40">No Ability</button>}
               <button type="button" onClick={endTurn} disabled={!isYourTurn || view?.phase === "FINISHED"} className="rounded-md border border-fuchsia-400 px-3 py-2 text-sm font-black disabled:opacity-40">End Turn</button>
               <button type="button" onClick={() => { setTargetMode("inspect"); setPendingAbilityId(""); }} disabled={targetMode === "inspect"} className="rounded-md border border-white/20 px-3 py-2 text-sm font-black disabled:opacity-40">Cancel Target</button>
               <button type="button" onClick={concede} disabled={!view || view.phase === "FINISHED"} className="rounded-md border border-rose-400 px-3 py-2 text-sm font-black text-rose-100 disabled:opacity-40">Concede</button>
