@@ -46,6 +46,6 @@ function rollRarity(rarityWeights: Record<Rarity, number>): Rarity {
 }
 
 function randomCardOfRarity(cardPool: CardTemplate[], rarity: Rarity) {
-  const cards = cardPool.filter((card) => card.rarity === rarity && card.cardType !== "LEADER");
+  const cards = cardPool.filter((card) => card.rarity === rarity);
   return cards[Math.floor(Math.random() * cards.length)];
 }

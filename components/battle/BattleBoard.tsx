@@ -20,7 +20,7 @@ type DeckCardRow = {
 };
 
 const minimumBoardSlots = [0, 1, 2, 3, 4];
-const maxBoardSize = 15;
+const maxBoardSize = 30;
 
 const rarityGlow: Record<Rarity, string> = {
   COMMON: "border-slate-500 shadow-slate-950/30",

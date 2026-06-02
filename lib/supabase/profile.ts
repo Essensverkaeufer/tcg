@@ -38,8 +38,44 @@ export async function ensureProfileForUser(supabase: ServiceSupabaseClient, user
       .select("*")
       .single();
 
-    return { profile: retry.data ?? null, error: retry.error };
+    if (retry.error || !retry.data) return { profile: retry.data ?? null, error: retry.error };
+    const starterError = await ensureStarterLeaderForUser(supabase, user.id);
+    return { profile: retry.data, error: starterError };
   }
 
-  return { profile: insert.data ?? null, error: insert.error };
+  if (insert.error || !insert.data) return { profile: insert.data ?? null, error: insert.error };
+  const starterError = await ensureStarterLeaderForUser(supabase, user.id);
+  return { profile: insert.data, error: starterError };
+}
+
+export async function ensureStarterLeaderForUser(supabase: ServiceSupabaseClient, userId: string) {
+  const starter = await supabase
+    .from("card_templates")
+    .select("id")
+    .eq("slug", "ada-printa")
+    .eq("card_type", "LEADER")
+    .maybeSingle();
+
+  if (starter.error) return starter.error;
+  if (!starter.data) return null;
+
+  const owned = await supabase
+    .from("user_card_collection")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("card_template_id", starter.data.id)
+    .maybeSingle();
+
+  if (owned.error) return owned.error;
+  if (owned.data) return null;
+
+  const inserted = await supabase
+    .from("user_card_collection")
+    .insert({
+      user_id: userId,
+      card_template_id: starter.data.id,
+      quantity: 1,
+    });
+
+  return inserted.error;
 }

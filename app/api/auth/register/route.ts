@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { ensureProfileForUser } from "@/lib/supabase/profile";
+import { ensureProfileForUser, ensureStarterLeaderForUser } from "@/lib/supabase/profile";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { normalizeUsername, usernameToAuthEmail } from "@/lib/supabase/username";
 
@@ -38,6 +38,11 @@ export async function POST(request: Request) {
   const { profile, error: profileError } = await ensureProfileForUser(supabase, created.data.user);
   if (profileError || !profile) {
     return NextResponse.json({ error: profileError?.message ?? "Could not create profile." }, { status: 500 });
+  }
+
+  const starterError = await ensureStarterLeaderForUser(supabase, created.data.user.id);
+  if (starterError) {
+    return NextResponse.json({ error: starterError.message ?? "Could not grant starter leader." }, { status: 500 });
   }
 
   return NextResponse.json({ user: { id: created.data.user.id, username }, profile }, { status: 201 });

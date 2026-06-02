@@ -2,7 +2,7 @@ import { dealDamage, drawCards, findCard, getAbilityTargetError, getMaxHealth, g
 import type { CardTemplate } from "@/types/cards";
 import type { CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
 
-const MAX_BOARD_SIZE = 15;
+const MAX_BOARD_SIZE = 30;
 const MAX_ENERGY = 10;
 const STARTING_ENERGY = 3;
 const ENERGY_GAIN_PER_TURN = 2;
