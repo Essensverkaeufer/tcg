@@ -17,7 +17,7 @@ function zeroStatCard(
     health: 0,
     size: 0,
     aura: 0,
-    imageUrl: `/card-art/${slug}.svg`,
+    imageUrl: `/card-art/${slug}.webp`,
     abilityData: [],
   };
 }
@@ -34,7 +34,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 2,
     size: 1,
     aura: 0,
-    imageUrl: "/card-art/garrett-current.svg",
+    imageUrl: "/card-art/garrett-current.webp",
     abilityData: [
       {
         id: "garrett-current-do-weed",
@@ -55,7 +55,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 10,
     size: 2,
     aura: 10,
-    imageUrl: "/card-art/garrett-prime.svg",
+    imageUrl: "/card-art/garrett-prime.webp",
     abilityData: [
       {
         id: "garrett-prime-flex",
@@ -80,7 +80,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 7,
     size: 5,
     aura: 4,
-    imageUrl: "/card-art/rowletforsenator.svg",
+    imageUrl: "/card-art/rowletforsenator.webp",
     abilityData: [
       {
         id: "rowletforsenator-study",
@@ -95,6 +95,20 @@ export const cardCatalog: CardTemplate[] = [
   },
   zeroStatCard("mwyi", "mwyi", "RARE", "CHARACTER"),
   zeroStatCard("necrp", "necrp", "RARE", "CHARACTER"),
+  {
+    slug: "necrp-tuff-edition",
+    name: "necrp (tuff edition)",
+    description: "The featured constellation leader reward.",
+    flavorText: "Tuff enough to bend the pity counter.",
+    rarity: "DIVINE",
+    cardType: "LEADER",
+    attack: 12,
+    health: 15,
+    size: 4,
+    aura: 12,
+    imageUrl: "/card-art/necrp-tuff-edition.webp",
+    abilityData: [],
+  },
   zeroStatCard("anarchy", "Anarchy", "EPIC", "CHARACTER"),
   zeroStatCard("buurazu", "buurazu", "MYTHIC", "CHARACTER"),
   zeroStatCard("jpj", "jpj", "LEGENDARY", "CHARACTER"),
@@ -109,7 +123,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 1,
     size: 1,
     aura: 1,
-    imageUrl: "/card-art/tyler-robinson.svg",
+    imageUrl: "/card-art/tyler-robinson.webp",
     abilityData: [
       {
         id: "tyler-robinson-only-counter",
@@ -147,7 +161,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 4,
     size: 3,
     aura: 3,
-    imageUrl: "/card-art/gabriela-stein.svg",
+    imageUrl: "/card-art/gabriela-stein.webp",
     abilityData: [],
   },
   zeroStatCard("the-group-chat", "the Group Chat", "RARE", "BUILDING"),

@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Activity, BookOpen, Heart, RotateCcw, Skull, Sparkles, Timer } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
+import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { cardCatalog } from "@/lib/game/cards";
 import { validateDeck } from "@/lib/game/decks/validateDeck";
 import { cardRowToTemplate } from "@/lib/game/mapping";
 import { applyAction, createMatchState, getCardCost, getUsedBoardSize, validateAction } from "@/lib/game/match/state";
+import { getRarityTheme } from "@/lib/game/rarities";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import type { AbilityDefinition, CardTemplate, Rarity } from "@/types/cards";
+import type { AbilityDefinition, CardTemplate } from "@/types/cards";
 import type { CardInstance, MatchPlayerState, MatchState } from "@/types/match";
 
 type BattleMode = "inspect" | "attack" | "ability" | "item";
@@ -22,15 +24,6 @@ type DeckCardRow = {
 
 const minimumBoardSlots = [0, 1, 2, 3, 4];
 const maxBoardSize = 30;
-
-const rarityGlow: Record<Rarity, string> = {
-  COMMON: "border-slate-500 shadow-slate-950/30",
-  RARE: "border-sky-400 shadow-sky-500/20",
-  EPIC: "border-fuchsia-400 shadow-fuchsia-500/20",
-  LEGENDARY: "border-amber-300 shadow-amber-400/25",
-  MYTHIC: "border-rose-400 shadow-rose-500/25",
-  ULTRA_LEGENDARY: "border-violet-300 shadow-violet-400/30",
-};
 
 function demoDeck(catalog: CardTemplate[] = cardCatalog, offset = 0) {
   const leaders = catalog.filter((card) => card.cardType === "LEADER");
@@ -535,20 +528,21 @@ function BattleCard({ card, selected, currentTurn, size = "normal" }: { card: Ca
   const stunned = (card.stunnedUntilTurn ?? 0) >= currentTurn;
   const blinded = (card.blindedUntilTurn ?? 0) >= currentTurn;
   const disabled = card.exhausted || stunned || blinded;
+  const imageUrl = resolveCardImageUrl(card.template.imageUrl);
   return (
     <article
       className={clsx(
-        "battle-card relative overflow-hidden rounded-lg border-2 bg-slate-950 shadow-xl transition",
-        rarityGlow[card.template.rarity],
+        "battle-card relative overflow-hidden rounded-lg border-2 bg-gradient-to-br shadow-xl transition",
+        getRarityTheme(card.template.rarity).card,
         selected && "ring-2 ring-amber-300",
         disabled && "opacity-75",
         isLarge ? "min-h-80" : isBadge ? "h-24 w-20" : "min-h-44",
       )}
     >
       <div className="absolute left-1 top-1 z-10 grid h-7 w-7 place-items-center rounded-full border border-amber-200 bg-slate-950 text-xs font-black text-amber-100">A{card.currentAura}</div>
-      {card.template.imageUrl && !card.template.imageUrl.startsWith("/card-art/") ? (
+      {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={card.template.imageUrl} alt={card.template.name} className={clsx("h-28 w-full object-cover", isLarge && "h-48", isBadge && "h-full")} />
+        <img src={imageUrl} alt={card.template.name} className={clsx("h-28 w-full object-cover", isLarge && "h-48", isBadge && "h-full")} />
       ) : (
         <div className={clsx("grid h-28 place-items-center bg-white/10 text-center text-xs font-black uppercase text-slate-400", isLarge && "h-48", isBadge && "h-full")}>{card.template.name}</div>
       )}

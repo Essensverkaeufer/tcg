@@ -1,4 +1,5 @@
 import type { CardTemplate } from "@/types/cards";
+import { highRarities } from "@/lib/game/rarities";
 
 export type DeckInputCard = {
   card: CardTemplate;
@@ -16,8 +17,6 @@ export const deckRules = {
   maxCopies: 2,
   maxHighRarityCopies: 1,
 };
-
-const highRarities = ["LEGENDARY", "MYTHIC", "ULTRA_LEGENDARY"];
 
 export function validateDeck(cards: DeckInputCard[]): DeckValidation {
   const errors: string[] = [];

@@ -7,6 +7,7 @@ import { io, type Socket } from "socket.io-client";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
+import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { isHiddenCard, type HiddenCard, type MatchView } from "@/lib/game/match/view";
 import { getCardCost } from "@/lib/game/match/state";
 import type { AbilityDefinition } from "@/types/cards";
@@ -309,14 +310,15 @@ function EnergyPill({ current, max }: { current: number; max: number }) {
 }
 
 function LeaderButton({ card, selected, onChoose }: { card: CardInstance; selected: boolean; onChoose: (card: CardInstance) => void }) {
+  const imageUrl = resolveCardImageUrl(card.template.imageUrl);
   return (
     <button type="button" onClick={() => onChoose(card)} aria-label={`Select ${card.template.name}`} className="w-full max-w-sm min-w-0 text-left sm:w-80">
       <article className={clsx("grid grid-cols-[76px_minmax(0,1fr)] overflow-hidden rounded-lg border bg-slate-950 shadow-xl", selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
         <div className="relative h-24 bg-white/10">
           <div className="absolute left-1 top-1 z-10 rounded-full bg-black/80 px-2 py-1 text-[10px] font-black text-amber-100">A{card.currentAura}</div>
-          {card.template.imageUrl ? (
+          {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={card.template.imageUrl} alt="" className="h-full w-full object-cover" />
+            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
           ) : <div className="grid h-full place-items-center p-2 text-center text-[10px] font-black uppercase text-slate-400">{card.template.name}</div>}
         </div>
         <div className="min-w-0 p-2">
@@ -343,13 +345,15 @@ function CardButton({ card, selected, hand, onChoose }: { card: CardInstance | H
     );
   }
 
+  const imageUrl = resolveCardImageUrl(card.template.imageUrl);
+
   return (
     <button type="button" onClick={() => onChoose(card)} aria-label={`Select ${card.template.name}`} className={clsx("min-w-0 shrink-0 text-left transition hover:-translate-y-1", hand ? "w-28 sm:w-32" : "w-full")}>
       <article className={clsx("relative overflow-hidden rounded-lg border-2 bg-slate-950 shadow-xl", selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
         <div className="absolute left-1 top-1 z-10 rounded-full bg-black/80 px-1.5 py-0.5 text-[10px] font-black text-amber-100">A{card.currentAura}</div>
-        {card.template.imageUrl ? (
+        {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.template.imageUrl} alt="" className={clsx("w-full object-cover", hand ? "h-20 sm:h-24" : "h-16 sm:h-20")} />
+          <img src={imageUrl} alt="" className={clsx("w-full object-cover", hand ? "h-20 sm:h-24" : "h-16 sm:h-20")} />
         ) : <div className={clsx("grid place-items-center bg-white/10 p-2 text-center text-[10px] font-black uppercase text-slate-400", hand ? "h-20 sm:h-24" : "h-16 sm:h-20")}>{card.template.name}</div>}
         <div className="p-2">
           <div className="min-w-0 truncate text-[11px] font-black sm:text-xs">{card.template.name}</div>

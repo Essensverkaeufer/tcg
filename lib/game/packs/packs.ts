@@ -25,6 +25,7 @@ export const packDefinitions: PackDefinition[] = [
       LEGENDARY: 7,
       MYTHIC: 1,
       ULTRA_LEGENDARY: 0,
+      DIVINE: 0,
     },
   },
   {
@@ -41,6 +42,7 @@ export const packDefinitions: PackDefinition[] = [
       LEGENDARY: 16,
       MYTHIC: 3,
       ULTRA_LEGENDARY: 1,
+      DIVINE: 0,
     },
   },
   {
@@ -57,6 +59,7 @@ export const packDefinitions: PackDefinition[] = [
       LEGENDARY: 60,
       MYTHIC: 13,
       ULTRA_LEGENDARY: 2,
+      DIVINE: 0,
     },
   },
 ];

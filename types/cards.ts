@@ -1,5 +1,5 @@
 export type CardType = "CHARACTER" | "BUILDING" | "ITEM" | "LEADER";
-export type Rarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "MYTHIC" | "ULTRA_LEGENDARY";
+export type Rarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "MYTHIC" | "ULTRA_LEGENDARY" | "DIVINE";
 
 export type AbilityTrigger =
   | "ON_PLAY"

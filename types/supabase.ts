@@ -41,7 +41,7 @@ export type Database = {
           slug: string;
           name: string;
           description: string;
-          rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "MYTHIC" | "ULTRA_LEGENDARY";
+          rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "MYTHIC" | "ULTRA_LEGENDARY" | "DIVINE";
           card_type: "CHARACTER" | "BUILDING" | "ITEM" | "LEADER";
           attack: number;
           health: number;
@@ -142,7 +142,7 @@ export type Database = {
           id: string;
           user_id: string;
           amount: number;
-          reason: "DAILY_LOGIN" | "MATCH_WIN" | "MATCH_LOSS" | "MATCH_DRAW" | "PACK_PURCHASE" | "ADMIN_GRANT";
+          reason: "DAILY_LOGIN" | "MATCH_WIN" | "MATCH_LOSS" | "MATCH_DRAW" | "PACK_PURCHASE" | "GACHA_PULL" | "ADMIN_GRANT";
           metadata: Json | null;
           created_at: string;
         };
@@ -173,6 +173,54 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["daily_login_rewards"]["Insert"]>;
+        Relationships: [];
+      };
+      gacha_pity: {
+        Row: {
+          user_id: string;
+          banner_slug: string;
+          pulls_since_featured: number;
+          total_pulls: number;
+          featured_copies: number;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          banner_slug: string;
+          pulls_since_featured?: number;
+          total_pulls?: number;
+          featured_copies?: number;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["gacha_pity"]["Insert"]>;
+        Relationships: [];
+      };
+      gacha_pull_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          banner_slug: string;
+          pull_count: number;
+          cost: number;
+          rewards: Json;
+          pity_before: number;
+          pity_after: number;
+          featured_hits: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          banner_slug: string;
+          pull_count: number;
+          cost: number;
+          rewards?: Json;
+          pity_before: number;
+          pity_after: number;
+          featured_hits?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["gacha_pull_history"]["Insert"]>;
         Relationships: [];
       };
       matchmaking_tickets: {
@@ -351,6 +399,27 @@ export type Database = {
           coins: number;
           claimed: boolean;
           reward_date: string;
+        }>;
+      };
+      grant_gacha_pulls: {
+        Args: {
+          p_user_id: string;
+          p_banner_slug: string;
+          p_pull_count: number;
+          p_featured_slug: string;
+          p_price_per_pull?: number;
+          p_hard_pity?: number;
+        };
+        Returns: Array<{
+          coins: number;
+          pulls_since_featured: number;
+          total_pulls: number;
+          featured_copies: number;
+          rewards: Json;
+          featured_hits: number;
+          cost: number;
+          pity_before: number;
+          pity_after: number;
         }>;
       };
     };

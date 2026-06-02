@@ -5,6 +5,7 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CardFrame } from "@/components/cards/CardFrame";
 import { cardRowToTemplate } from "@/lib/game/mapping";
+import { rarityValues } from "@/lib/game/rarities";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { AbilityDefinition, CardTemplate, CardType, Rarity } from "@/types/cards";
 
@@ -119,7 +120,7 @@ export function AdminCardsClient() {
               {["CHARACTER", "BUILDING", "ITEM", "LEADER"].map((value) => <option key={value}>{value}</option>)}
             </select>
             <select className="rounded-md border border-slate-300 px-3 py-2" value={form.rarity} onChange={(event) => setForm({ ...form, rarity: event.target.value as Rarity })}>
-              {["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ULTRA_LEGENDARY"].map((value) => <option key={value}>{value}</option>)}
+              {rarityValues.map((value) => <option key={value}>{value}</option>)}
             </select>
             {(["attack", "health", "size", "aura"] as const).map((field) => (
               <input key={field} className="rounded-md border border-slate-300 px-3 py-2" type="number" min={0} placeholder={field} value={form[field]} onChange={(event) => setForm({ ...form, [field]: Number(event.target.value) })} />

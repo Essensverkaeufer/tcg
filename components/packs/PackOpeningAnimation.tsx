@@ -5,25 +5,8 @@ import Link from "next/link";
 import clsx from "clsx";
 import { Eye, PackageOpen, RotateCcw, Sparkles, Store, Zap } from "lucide-react";
 import { CardFrame } from "@/components/cards/CardFrame";
-import type { CardTemplate, Rarity } from "@/types/cards";
-
-const rarityGlow: Record<Rarity, string> = {
-  COMMON: "from-slate-500/25 via-slate-300/15 to-transparent",
-  RARE: "from-sky-400/35 via-cyan-300/20 to-transparent",
-  EPIC: "from-fuchsia-500/35 via-pink-300/20 to-transparent",
-  LEGENDARY: "from-amber-400/45 via-yellow-200/25 to-transparent",
-  MYTHIC: "from-rose-500/45 via-indigo-300/25 to-transparent",
-  ULTRA_LEGENDARY: "from-violet-500/50 via-amber-300/30 to-transparent",
-};
-
-const rarityText: Record<Rarity, string> = {
-  COMMON: "text-slate-200",
-  RARE: "text-sky-200",
-  EPIC: "text-fuchsia-200",
-  LEGENDARY: "text-amber-200",
-  MYTHIC: "text-rose-200",
-  ULTRA_LEGENDARY: "text-violet-100",
-};
+import { getRarityTheme } from "@/lib/game/rarities";
+import type { CardTemplate } from "@/types/cards";
 
 export function PackOpeningAnimation({
   cards,
@@ -45,7 +28,7 @@ export function PackOpeningAnimation({
   const currentCard = revealed > 0 ? cards[revealed - 1] : undefined;
   const nextCard = cards[revealed];
   const allRevealed = revealed >= cards.length;
-  const stageGlow = useMemo(() => currentCard ? rarityGlow[currentCard.rarity] : "from-rose-500/30 via-cyan-300/15 to-transparent", [currentCard]);
+  const stageGlow = useMemo(() => currentCard ? getRarityTheme(currentCard.rarity).glow : "from-rose-500/30 via-cyan-300/15 to-transparent", [currentCard]);
 
   function openPack() {
     if (!hasCards || opened) return;
@@ -189,7 +172,7 @@ export function PackOpeningAnimation({
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-black">Card {index + 1}</span>
-                      <span className={clsx("text-xs font-black", isVisible ? rarityText[card.rarity] : "text-white/35")}>
+                      <span className={clsx("text-xs font-black", isVisible ? getRarityTheme(card.rarity).text : "text-white/35")}>
                         {isVisible ? card.rarity.replace("_", " ") : "HIDDEN"}
                       </span>
                     </div>

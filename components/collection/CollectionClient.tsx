@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CardFrame } from "@/components/cards/CardFrame";
+import { rarityValues } from "@/lib/game/rarities";
 import type { CardTemplate, CardType, Rarity } from "@/types/cards";
 
 type CollectionEntry = {
@@ -12,7 +13,7 @@ type CollectionEntry = {
   card: CardTemplate;
 };
 
-const rarityOptions: Array<Rarity | "ALL"> = ["ALL", "COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ULTRA_LEGENDARY"];
+const rarityOptions: Array<Rarity | "ALL"> = ["ALL", ...rarityValues];
 const typeOptions: Array<CardType | "ALL"> = ["ALL", "CHARACTER", "BUILDING", "ITEM", "LEADER"];
 
 export function CollectionClient() {

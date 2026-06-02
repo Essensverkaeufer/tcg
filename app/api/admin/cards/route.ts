@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { rarityValues } from "@/lib/game/rarities";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 import type { Json } from "@/types/supabase";
 
@@ -7,7 +8,7 @@ const cardSchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),
   description: z.string().default(""),
-  rarity: z.enum(["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ULTRA_LEGENDARY"]),
+  rarity: z.enum(rarityValues),
   cardType: z.enum(["CHARACTER", "BUILDING", "ITEM", "LEADER"]),
   attack: z.number().int().min(0),
   health: z.number().int().min(0),

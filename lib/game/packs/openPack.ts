@@ -11,6 +11,7 @@ const defaultRarityWeights: Record<Rarity, number> = {
   LEGENDARY: 7,
   MYTHIC: 1,
   ULTRA_LEGENDARY: 0,
+  DIVINE: 0,
 };
 
 export function openPack(cardPool: CardTemplate[], cardCount = 5, rarityWeights = defaultRarityWeights): PackOpeningResult {
