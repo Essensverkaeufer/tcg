@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { ensureProfileForUser } from "@/lib/supabase/profile";
+import { claimDailyLoginRewardForUser, ensureProfileForUser } from "@/lib/supabase/profile";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { usernameToAuthEmail } from "@/lib/supabase/username";
 import type { Database } from "@/types/supabase";
@@ -44,9 +44,15 @@ export async function POST(request: Request) {
   }
 
   const serviceSupabase = createServiceSupabaseClient();
-  const { profile, error: profileError } = await ensureProfileForUser(serviceSupabase, result.data.user);
+  const { profile: ensuredProfile, error: profileError } = await ensureProfileForUser(serviceSupabase, result.data.user);
+  let profile = ensuredProfile;
   if (profileError || !profile) {
     return NextResponse.json({ error: profileError?.message ?? "Could not load profile." }, { status: 500 });
+  }
+
+  const dailyLogin = await claimDailyLoginRewardForUser(serviceSupabase, result.data.user.id);
+  if (!dailyLogin.error && dailyLogin.coins !== null) {
+    profile = { ...profile, coins: dailyLogin.coins };
   }
 
   const response = NextResponse.json({

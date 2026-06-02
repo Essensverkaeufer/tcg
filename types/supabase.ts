@@ -157,6 +157,24 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["currency_transactions"]["Insert"]>;
         Relationships: [];
       };
+      daily_login_rewards: {
+        Row: {
+          id: string;
+          user_id: string;
+          reward_date: string;
+          amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          reward_date?: string;
+          amount?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["daily_login_rewards"]["Insert"]>;
+        Relationships: [];
+      };
       matchmaking_tickets: {
         Row: {
           id: string;
@@ -322,6 +340,17 @@ export type Database = {
         Returns: Array<{
           match_id: string;
           rewards_granted: boolean;
+        }>;
+      };
+      claim_daily_login_reward: {
+        Args: {
+          p_user_id: string;
+          p_reward?: number;
+        };
+        Returns: Array<{
+          coins: number;
+          claimed: boolean;
+          reward_date: string;
         }>;
       };
     };

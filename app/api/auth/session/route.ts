@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ensureProfileForUser } from "@/lib/supabase/profile";
+import { claimDailyLoginRewardForUser, ensureProfileForUser } from "@/lib/supabase/profile";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -19,11 +19,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ user: null, profile: null, accessToken: null }, { status: 401 });
   }
 
-  const { profile, error: profileError } = await ensureProfileForUser(supabase, data.user);
+  const { profile: ensuredProfile, error: profileError } = await ensureProfileForUser(supabase, data.user);
+  let profile = ensuredProfile;
+  const dailyLogin = profile ? await claimDailyLoginRewardForUser(supabase, data.user.id) : { claimed: false, coins: null, error: null };
+  if (!dailyLogin.error && dailyLogin.coins !== null && profile) {
+    profile = { ...profile, coins: dailyLogin.coins };
+  }
+
   return NextResponse.json({
     user: data.user,
     profile,
     profileError: profileError?.message ?? "",
+    dailyLoginClaimed: dailyLogin.claimed,
     accessToken: decodeURIComponent(accessToken),
   });
 }

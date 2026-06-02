@@ -79,3 +79,19 @@ export async function ensureStarterLeaderForUser(supabase: ServiceSupabaseClient
 
   return inserted.error;
 }
+
+export async function claimDailyLoginRewardForUser(supabase: ServiceSupabaseClient, userId: string) {
+  const result = await supabase
+    .rpc("claim_daily_login_reward", {
+      p_user_id: userId,
+    })
+    .select()
+    .maybeSingle();
+
+  if (result.error) return { claimed: false, coins: null, error: result.error };
+  return {
+    claimed: Boolean(result.data?.claimed),
+    coins: result.data?.coins ?? null,
+    error: null,
+  };
+}
