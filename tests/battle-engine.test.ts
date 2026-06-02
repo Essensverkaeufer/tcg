@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createMatchState, applyAction } from "@/lib/game/match/state";
+import { createMatchState, applyAction, validateAction } from "@/lib/game/match/state";
 import { drawCards } from "@/lib/game/abilities/engine";
 import { createMatchView, isHiddenCard } from "@/lib/game/match/view";
 import type { CardTemplate } from "@/types/cards";
@@ -27,6 +27,23 @@ function unit(slug: string, attack = 1, health = 2): CardTemplate {
     flavorText: "",
     rarity: "COMMON",
     cardType: "CHARACTER",
+    attack,
+    health,
+    size: 1,
+    aura: 0,
+    imageUrl: "",
+    abilityData: [],
+  };
+}
+
+function building(slug: string, attack = 0, health = 3): CardTemplate {
+  return {
+    slug,
+    name: slug,
+    description: "Building",
+    flavorText: "",
+    rarity: "COMMON",
+    cardType: "BUILDING",
     attack,
     health,
     size: 1,
@@ -96,5 +113,32 @@ const cappedPlayer = capped.players[0];
 assert.equal(cappedPlayer.hand.length, 5, "opening hand should stay at 5");
 assert.equal(drawCards(cappedPlayer, 1), 0, "drawing at 5 cards should draw nothing");
 assert.equal(cappedPlayer.hand.length, 5, "hand should stay capped at 5");
+
+const protectedState = createMatchState(
+  "building-protect",
+  { id: "a", name: "A", deck: [leader, unit("attacker", 3, 3), ...Array.from({ length: 9 }, (_, index) => unit(`a-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, building("wall", 0, 5), ...Array.from({ length: 9 }, (_, index) => unit(`b-extra-${index}`))] },
+  { seed: "building-protect-seed", deterministic: true },
+);
+const attacker = protectedState.players[0].hand.find((card) => card.template.slug === "attacker")!;
+attacker.zone = "BOARD";
+attacker.enteredTurn = 0;
+attacker.exhausted = false;
+protectedState.players[0].board.push(attacker);
+const wall = protectedState.players[1].hand.find((card) => card.template.slug === "wall")!;
+wall.zone = "BOARD";
+protectedState.players[1].board.push(wall);
+assert.deepEqual(validateAction(protectedState, {
+  type: "ATTACK",
+  playerId: protectedState.players[0].playerId,
+  attackerInstanceId: attacker.instanceId,
+  targetInstanceId: protectedState.players[1].leader.instanceId,
+}), { ok: false, reason: "Destroy enemy buildings before attacking the leader." }, "buildings should block direct leader attacks");
+assert.equal(validateAction(protectedState, {
+  type: "ATTACK",
+  playerId: protectedState.players[0].playerId,
+  attackerInstanceId: attacker.instanceId,
+  targetInstanceId: wall.instanceId,
+}).ok, true, "buildings should remain valid attack targets");
 
 console.log("battle engine tests passed");

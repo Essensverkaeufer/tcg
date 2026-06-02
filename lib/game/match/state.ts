@@ -92,6 +92,8 @@ export function validateAction(state: MatchState, action: MatchAction): Validati
     const opponent = getOpponent(state, action.playerId);
     const target = [...opponent.board, opponent.leader].find((entry) => entry.instanceId === action.targetInstanceId);
     if (!target) return { ok: false, reason: "Invalid attack target." };
+    const leaderIsProtected = target.instanceId === opponent.leader.instanceId && opponent.board.some((entry) => entry.template.cardType === "BUILDING");
+    if (leaderIsProtected) return { ok: false, reason: "Destroy enemy buildings before attacking the leader." };
   }
 
   if (action.type === "USE_ABILITY") {

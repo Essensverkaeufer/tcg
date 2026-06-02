@@ -216,7 +216,16 @@ export function OnlineBattleClient() {
             <div className="mt-5 rounded-md bg-white/5 p-3 text-sm">
               <div className="font-black">Status: {status}</div>
               <div className="mt-1 break-words text-slate-400">Server: {realtimeUrl || "not configured"}</div>
-              {view ? <div className="mt-1 text-slate-400">Turn {view.turn}: {activePlayer?.displayName}</div> : null}
+              {activePlayer ? (
+                <div className="mt-3 rounded-md border border-amber-300/20 bg-amber-300/10 p-2">
+                  <div className="text-xs font-black uppercase tracking-widest text-amber-100">Active Player</div>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-black">{activePlayer.displayName}</span>
+                    <EnergyPill current={activePlayer.energyCurrent} max={activePlayer.energyMax} />
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400">Turn {view?.turn}</div>
+                </div>
+              ) : null}
             </div>
             {selected ? (
               <div className="mt-4 rounded-md bg-white/5 p-3 text-sm">
@@ -251,12 +260,18 @@ export function OnlineBattleClient() {
 }
 
 function PlayerZone({ title, player, selectedId, active, onChoose }: { title: string; player: MatchView["players"][number]; selectedId: string; active: boolean; onChoose: (card: CardInstance | HiddenCard) => void }) {
+  const leaderProtected = player.board.some((card) => card.template.cardType === "BUILDING");
+
   return (
     <section className={clsx("min-w-0 overflow-hidden rounded-lg border bg-black/35 p-3", active ? "border-amber-300/70" : "border-white/10")}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-black">{title}</h2>
-          <p className="text-xs font-bold text-slate-400">Deck {player.deckCount} | Hand {player.handCount} | Graveyard {player.graveyard.length}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="min-w-0 truncate text-lg font-black">{title}</h2>
+            <EnergyPill current={player.energyCurrent} max={player.energyMax} />
+            {leaderProtected ? <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-100">Leader protected</span> : null}
+          </div>
+          <p className="mt-1 text-xs font-bold text-slate-400">Deck {player.deckCount} | Hand {player.handCount} | Graveyard {player.graveyard.length}</p>
         </div>
         <LeaderButton card={player.leader} selected={selectedId === player.leader.instanceId} onChoose={onChoose} />
       </div>
@@ -272,6 +287,15 @@ function PlayerZone({ title, player, selectedId, active, onChoose }: { title: st
         )}
       </div>
     </section>
+  );
+}
+
+function EnergyPill({ current, max }: { current: number; max: number }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2 py-1 text-xs font-black text-amber-100">
+      <span className="text-amber-300">E</span>
+      {current}/{max}
+    </span>
   );
 }
 
