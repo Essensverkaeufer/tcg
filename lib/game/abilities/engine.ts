@@ -82,6 +82,20 @@ function applyEffect(
   const targets = selectTargets(nextState, effect, event);
   const messages: string[] = [];
 
+  if (effect.type === "COIN_FLIP") {
+    const side = nextRandom(nextState) < 0.5 ? "heads" : "tails";
+    messages.push(`${ability.label} landed ${side}.`);
+
+    for (const nestedEffect of readCoinFlipEffects(effect, side)) {
+      const result = applyEffect(nextState, nestedEffect, event, ability);
+      nextState = result.state;
+      messages.push(...result.messages);
+    }
+
+    sweepDeadCards(nextState);
+    return { state: nextState, messages };
+  }
+
   for (const target of targets) {
     switch (effect.type) {
       case "DAMAGE":
@@ -324,6 +338,17 @@ function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controlle
 
 function matchesCardSlug(card: CardInstance, cardSlug?: string) {
   return !cardSlug || card.template.slug === cardSlug;
+}
+
+function readCoinFlipEffects(effect: AbilityEffect, side: "heads" | "tails") {
+  const nested = effect.metadata?.[side];
+  if (!Array.isArray(nested)) return [];
+
+  return nested.filter((entry): entry is AbilityEffect => {
+    if (!entry || typeof entry !== "object") return false;
+    const candidate = entry as Partial<AbilityEffect>;
+    return typeof candidate.type === "string" && typeof candidate.target === "string";
+  });
 }
 
 function nextRandom(state: MatchState) {

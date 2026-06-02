@@ -36,6 +36,41 @@ function unit(slug: string, attack = 1, health = 2): CardTemplate {
   };
 }
 
+function coinUnit(slug: string): CardTemplate {
+  return {
+    slug,
+    name: slug,
+    description: "Coin unit",
+    flavorText: "",
+    rarity: "RARE",
+    cardType: "CHARACTER",
+    attack: 1,
+    health: 2,
+    size: 1,
+    aura: 0,
+    imageUrl: "",
+    abilityData: [
+      {
+        id: `${slug}-coin`,
+        label: "50/50",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        oncePerGame: true,
+        effects: [
+          {
+            type: "COIN_FLIP",
+            target: "SELF",
+            metadata: {
+              heads: [{ type: "DESTROY", target: "ENEMY_CHARACTER" }],
+              tails: [{ type: "DESTROY", target: "SELF" }],
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function building(slug: string, attack = 0, health = 3): CardTemplate {
   return {
     slug,
@@ -140,5 +175,50 @@ assert.equal(validateAction(protectedState, {
   attackerInstanceId: attacker.instanceId,
   targetInstanceId: wall.instanceId,
 }).ok, true, "buildings should remain valid attack targets");
+
+let coinHeadsState = createMatchState(
+  "coin-heads",
+  { id: "a", name: "A", deck: [leader, coinUnit("coin-heads-unit"), ...Array.from({ length: 9 }, (_, index) => unit(`a-coin-heads-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("enemy-heads-target"), ...Array.from({ length: 9 }, (_, index) => unit(`b-coin-heads-extra-${index}`))] },
+  { seed: "coin-tails", deterministic: true },
+);
+const headsSource = coinHeadsState.players[0].hand.find((card) => card.template.slug === "coin-heads-unit")!;
+coinHeadsState.players[0].hand = coinHeadsState.players[0].hand.filter((card) => card.instanceId !== headsSource.instanceId);
+headsSource.zone = "BOARD";
+headsSource.enteredTurn = 0;
+coinHeadsState.players[0].board.push(headsSource);
+const headsEnemy = coinHeadsState.players[1].hand.find((card) => card.template.slug === "enemy-heads-target")!;
+coinHeadsState.players[1].hand = coinHeadsState.players[1].hand.filter((card) => card.instanceId !== headsEnemy.instanceId);
+headsEnemy.zone = "BOARD";
+coinHeadsState.players[1].board.push(headsEnemy);
+coinHeadsState = applyAction(coinHeadsState, {
+  type: "USE_ABILITY",
+  playerId: coinHeadsState.players[0].playerId,
+  sourceInstanceId: headsSource.instanceId,
+  abilityId: "coin-heads-unit-coin",
+});
+assert.equal(coinHeadsState.messages.includes("50/50 landed heads."), true, "coin flip should report heads");
+assert.equal(coinHeadsState.players[1].graveyard.some((card) => card.template.slug === "enemy-heads-target"), true, "heads should destroy the first enemy character");
+assert.equal(coinHeadsState.players[0].oncePerGameUsed.includes("coin-heads-unit-coin"), true, "coin flip ability should be marked once-per-game");
+
+let coinTailsState = createMatchState(
+  "coin-tails",
+  { id: "a", name: "A", deck: [leader, coinUnit("coin-tails-unit"), ...Array.from({ length: 9 }, (_, index) => unit(`a-coin-tails-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("enemy-tails-target"), ...Array.from({ length: 9 }, (_, index) => unit(`b-coin-tails-extra-${index}`))] },
+  { seed: "coin-heads", deterministic: true },
+);
+const tailsSource = coinTailsState.players[0].hand.find((card) => card.template.slug === "coin-tails-unit")!;
+coinTailsState.players[0].hand = coinTailsState.players[0].hand.filter((card) => card.instanceId !== tailsSource.instanceId);
+tailsSource.zone = "BOARD";
+tailsSource.enteredTurn = 0;
+coinTailsState.players[0].board.push(tailsSource);
+coinTailsState = applyAction(coinTailsState, {
+  type: "USE_ABILITY",
+  playerId: coinTailsState.players[0].playerId,
+  sourceInstanceId: tailsSource.instanceId,
+  abilityId: "coin-tails-unit-coin",
+});
+assert.equal(coinTailsState.messages.includes("50/50 landed tails."), true, "coin flip should report tails");
+assert.equal(coinTailsState.players[0].graveyard.some((card) => card.template.slug === "coin-tails-unit"), true, "tails should destroy the source");
 
 console.log("battle engine tests passed");

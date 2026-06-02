@@ -47,6 +47,7 @@ export type EffectType =
   | "SHIELD"
   | "STUN"
   | "BLIND"
+  | "COIN_FLIP"
   | "COPY_ABILITY"
   | "REVIVE"
   | "TRANSFORM"
