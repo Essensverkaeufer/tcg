@@ -37,7 +37,6 @@ type ActiveMatch = {
   players: [QueuedPlayer, QueuedPlayer];
   lastActionSeq: Record<string, number>;
   turnTimer?: NodeJS.Timeout;
-  disconnectTimers: Record<string, NodeJS.Timeout | undefined>;
 };
 
 const queue: QueuedPlayer[] = [];
@@ -53,7 +52,6 @@ const supabase = createServiceSupabaseClient();
 
 const serverId = process.env.REALTIME_SERVER_ID ?? "local-dev";
 const turnMs = Number(process.env.REALTIME_TURN_MS ?? 90_000);
-const reconnectMs = Number(process.env.REALTIME_RECONNECT_MS ?? 60_000);
 
 export function createSocketServer(port = Number(process.env.PORT ?? process.env.SOCKET_PORT ?? 3001)) {
   const httpServer = createServer((request, response) => {
@@ -197,7 +195,6 @@ async function tryStartMatch(io: Server) {
       state,
       players: [first, second],
       lastActionSeq: { [first.userId]: 0, [second.userId]: 0 },
-      disconnectTimers: {},
     };
 
     matches.set(matchId, match);
@@ -280,7 +277,6 @@ function reconnectToMatch(io: Server, socket: Socket) {
 
   player.socketId = socket.id;
   socket.join(match.id);
-  clearDisconnectTimer(match, userId);
   void supabase.from("match_players").update({ connection_state: "ONLINE", disconnected_at: null }).eq("match_id", match.id).eq("user_id", userId);
   socket.emit("match:ready", { matchId: match.id });
   socket.emit("match:state", createMatchView(match.state, userId));
@@ -299,9 +295,6 @@ async function handleDisconnect(io: Server, socket: Socket) {
   if (!match || match.state.phase === "FINISHED") return;
 
   await supabase.from("match_players").update({ connection_state: "DISCONNECTED", disconnected_at: new Date().toISOString() }).eq("match_id", match.id).eq("user_id", userId);
-  match.disconnectTimers[userId] = setTimeout(() => {
-    void concedeMatch(io, { data: { userId } } as Socket, match.id, "DISCONNECT");
-  }, reconnectMs);
   broadcastMatch(io, match);
 }
 
@@ -327,7 +320,6 @@ async function concedeMatch(io: Server, socket: Socket, requestedMatchId: string
 
 async function finishMatch(io: Server, match: ActiveMatch, winnerId: string | null, reason: string) {
   if (match.turnTimer) clearTimeout(match.turnTimer);
-  for (const player of match.players) clearDisconnectTimer(match, player.userId);
 
   await supabase.rpc("finish_multiplayer_match", {
     p_match_id: match.id,
@@ -487,12 +479,6 @@ function getSocketMatch(userId: string, requestedMatchId?: string) {
   const match = matchId ? matches.get(matchId) : undefined;
   if (!match) return undefined;
   return match.players.some((player) => player.userId === userId) ? match : undefined;
-}
-
-function clearDisconnectTimer(match: ActiveMatch, userId: string) {
-  const timer = match.disconnectTimers[userId];
-  if (timer) clearTimeout(timer);
-  match.disconnectTimers[userId] = undefined;
 }
 
 function readToken(socket: Socket) {

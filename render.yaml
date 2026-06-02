@@ -22,5 +22,3 @@ services:
         value: prod-render-1
       - key: REALTIME_TURN_MS
         value: "90000"
-      - key: REALTIME_RECONNECT_MS
-        value: "60000"
