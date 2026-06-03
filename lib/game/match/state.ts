@@ -136,13 +136,11 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
     const opponent = getOpponent(nextState, action.playerId);
     nextState.activePlayerId = opponent.playerId;
     nextState.turn += 1;
-    if (opponent.hasStartedTurn) {
-      opponent.energyMax = Math.min(MAX_ENERGY, Math.max(STARTING_ENERGY, opponent.energyMax + ENERGY_GAIN_PER_TURN));
-    } else {
+    if (!opponent.hasStartedTurn) {
       opponent.hasStartedTurn = true;
-      opponent.energyMax = STARTING_ENERGY;
     }
     opponent.turnsStarted += 1;
+    opponent.energyMax = getEnergyForPlayerTurn(nextState, opponent);
     opponent.energyCurrent = opponent.energyMax;
     opponent.playedCardsThisTurn = 0;
     const shouldSkipDraw = !opponent.skippedOpeningDraw && opponent.playerId === nextState.firstPlayerId;
@@ -330,6 +328,12 @@ function createPlayerState(
     playedCardsThisTurn: 0,
     oncePerGameUsed: [],
   };
+}
+
+function getEnergyForPlayerTurn(state: MatchState, player: MatchPlayerState) {
+  const normalEnergy = STARTING_ENERGY + Math.max(0, player.turnsStarted - 1) * ENERGY_GAIN_PER_TURN;
+  const secondPlayerBonus = player.playerId !== state.firstPlayerId && player.turnsStarted <= 2 ? 1 : 0;
+  return Math.min(MAX_ENERGY, normalEnergy + secondPlayerBonus);
 }
 
 function instantiateCard(template: CardTemplate, ownerId: string, zone: CardInstance["zone"], index: number, options: { deterministic?: boolean; seed?: string }): CardInstance {

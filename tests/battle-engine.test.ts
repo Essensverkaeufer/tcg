@@ -186,6 +186,25 @@ const view = createMatchView(first, "a");
 assert.equal(view.players[0].hand.some(isHiddenCard), false, "viewer hand should be visible");
 assert.equal(view.players[1].hand.every(isHiddenCard), true, "opponent hand should be hidden");
 
+let energyState = createMatchState(
+  "energy-ramp",
+  { id: "a", name: "A", deck: deck("a-energy") },
+  { id: "b", name: "B", deck: deck("b-energy") },
+  { seed: "energy-ramp-seed", deterministic: true },
+);
+assert.equal(energyState.activePlayerId, "a", "deterministic match should start player A");
+assert.equal(energyState.players[0].energyMax, 3, "first player should start on 3 energy");
+energyState = applyAction(energyState, { type: "END_TURN", playerId: "a" });
+assert.equal(energyState.players[1].energyMax, 4, "second player should start their first turn on 4 energy");
+energyState = applyAction(energyState, { type: "END_TURN", playerId: "b" });
+assert.equal(energyState.players[0].energyMax, 5, "first player should have 5 energy on their second turn");
+energyState = applyAction(energyState, { type: "END_TURN", playerId: "a" });
+assert.equal(energyState.players[1].energyMax, 6, "second player should have 6 energy on their second turn");
+energyState = applyAction(energyState, { type: "END_TURN", playerId: "b" });
+assert.equal(energyState.players[0].energyMax, 7, "first player should have 7 energy on their third turn");
+energyState = applyAction(energyState, { type: "END_TURN", playerId: "a" });
+assert.equal(energyState.players[1].energyMax, 7, "second player should match the normal energy curve on their third turn");
+
 let state = createMatchState(
   "flow",
   { id: "a", name: "A", deck: deck("a") },
