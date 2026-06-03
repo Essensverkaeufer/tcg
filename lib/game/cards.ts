@@ -98,8 +98,8 @@ export const cardCatalog: CardTemplate[] = [
   {
     slug: "necrp-tuff-edition",
     name: "necrp (tuff edition)",
-    description: "The featured constellation leader reward.",
-    flavorText: "Tuff enough to bend the pity counter.",
+    description: "necrp, but locked in and way more tuff.",
+    flavorText: "Same necrp. Heavier aura.",
     rarity: "DIVINE",
     cardType: "LEADER",
     attack: 12,
@@ -107,7 +107,18 @@ export const cardCatalog: CardTemplate[] = [
     size: 4,
     aura: 12,
     imageUrl: "/card-art/necrp-tuff-edition.webp",
-    abilityData: [],
+    abilityData: [
+      {
+        id: "necrp-tuff-board-wipe",
+        label: "Tuff Sweep",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        cooldownTurns: 3,
+        effects: [
+          { type: "DAMAGE", target: "ENEMY_BOARD_CHARACTERS", amount: 8 },
+        ],
+      },
+    ],
   },
   zeroStatCard("anarchy", "Anarchy", "EPIC", "CHARACTER"),
   zeroStatCard("buurazu", "buurazu", "MYTHIC", "CHARACTER"),

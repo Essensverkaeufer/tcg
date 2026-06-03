@@ -49,7 +49,10 @@ export function resolveTriggeredAbilities(state: MatchState, event: AbilityEvent
     if (!conditionsPass(nextState, ability, event.controllerId)) continue;
     if (ability.oncePerGame && hasUsedOncePerGame(nextState, event.controllerId, ability.id)) continue;
     if (ability.trigger === "ACTIVATED" && source.activatedThisTurn.includes(ability.id)) continue;
-    if (ability.trigger === "ACTIVATED" && getAbilityCooldownRemaining(source, ability.id, nextState.turn) > 0) continue;
+    if (ability.trigger === "ACTIVATED") {
+      const owner = getPlayer(nextState, source.ownerId);
+      if (getAbilityCooldownRemaining(source, ability.id, owner.turnsStarted) > 0) continue;
+    }
 
     for (const effect of ability.effects) {
       const result = applyEffect(nextState, effect, event, ability);
@@ -68,8 +71,9 @@ export function resolveTriggeredAbilities(state: MatchState, event: AbilityEvent
         updatedSource.activatedThisTurn.push(ability.id);
         const cooldownTurns = Math.max(0, ability.cooldownTurns ?? 0);
         if (cooldownTurns > 0) {
+          const owner = getPlayer(nextState, updatedSource.ownerId);
           updatedSource.abilityCooldowns ??= {};
-          updatedSource.abilityCooldowns[ability.id] = nextState.turn + cooldownTurns;
+          updatedSource.abilityCooldowns[ability.id] = owner.turnsStarted + cooldownTurns + 1;
         }
       }
     }
@@ -104,7 +108,10 @@ function applyEffect(
     return { state: nextState, messages };
   }
 
-  for (const target of targets) {
+  for (const selectedTarget of targets) {
+    const target = findCard(nextState, selectedTarget.instanceId);
+    if (!target) continue;
+
     switch (effect.type) {
       case "DAMAGE":
         messages.push(...dealDamage(target, effect.amount ?? 0, ability.label));
@@ -236,9 +243,9 @@ export function drawCards(player: MatchPlayerState, amount = 1) {
   return drawn;
 }
 
-export function getAbilityCooldownRemaining(card: CardInstance, abilityId: string, currentTurn: number) {
-  const cooldownUntilTurn = card.abilityCooldowns?.[abilityId] ?? 0;
-  return Math.max(0, cooldownUntilTurn - currentTurn + 1);
+export function getAbilityCooldownRemaining(card: CardInstance, abilityId: string, ownerTurnsStarted: number) {
+  const availableOnOwnerTurn = card.abilityCooldowns?.[abilityId] ?? 0;
+  return Math.max(0, availableOnOwnerTurn - ownerTurnsStarted);
 }
 
 export function sweepDeadCards(state: MatchState) {
@@ -292,6 +299,8 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
         && matchesCardSlug(requestedTarget, effect.cardSlug)
         ? [requestedTarget]
         : opponent.board.filter((card) => card.template.cardType === "CHARACTER" && matchesCardSlug(card, effect.cardSlug)).slice(0, 1);
+    case "ENEMY_BOARD_CHARACTERS":
+      return opponent.board.filter((card) => card.template.cardType === "CHARACTER" && matchesCardSlug(card, effect.cardSlug));
     case "ENEMY_BUILDING":
       return requestedTarget && requestedTarget.ownerId === opponent.playerId && requestedTarget.zone === "BOARD"
         && requestedTarget.template.cardType === "BUILDING"
@@ -319,7 +328,7 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
 }
 
 function isEffectTargeted(effect: AbilityEffect) {
-  return !["SELF", "RANDOM_ENEMY", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
+  return !["SELF", "RANDOM_ENEMY", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
 }
 
 function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controllerId: string, target: CardInstance) {
@@ -337,6 +346,7 @@ function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controlle
     case "ALLY_CHARACTER":
       return target.ownerId === controller.playerId && target.zone === "BOARD" && target.template.cardType === "CHARACTER";
     case "ENEMY_CHARACTER":
+    case "ENEMY_BOARD_CHARACTERS":
       return target.ownerId === opponent.playerId && target.zone === "BOARD" && target.template.cardType === "CHARACTER";
     case "ENEMY_BUILDING":
       return target.ownerId === opponent.playerId && target.zone === "BOARD" && target.template.cardType === "BUILDING";

@@ -1,8 +1,9 @@
 "use client";
 
 import clsx from "clsx";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Activity, BookOpen, Heart, RotateCcw, Skull, Sparkles, Timer } from "lucide-react";
+import { useSiteAudio } from "@/components/audio/SiteAudioProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { resolveCardImageUrl } from "@/lib/game/card-images";
@@ -66,6 +67,8 @@ function isValidBattleDeck(deck?: CardTemplate[]) {
 export function BattleBoard() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const { user } = useAuth();
+  const { playTurnCue } = useSiteAudio();
+  const lastTurnEventId = useRef<string | null>(null);
   const [state, setState] = useState<MatchState | null>(() => buildMatch());
   const [selectedId, setSelectedId] = useState("");
   const [mode, setMode] = useState<BattleMode>("inspect");
@@ -74,6 +77,15 @@ export function BattleBoard() {
   const [deckSource, setDeckSource] = useState("Demo decks loaded.");
   const [loadedDeck, setLoadedDeck] = useState<CardTemplate[] | undefined>();
   const [onlineCatalog, setOnlineCatalog] = useState<CardTemplate[]>(cardCatalog);
+
+  useEffect(() => {
+    const event = state?.lastEvent;
+    if (!event || event.type !== "TURN") return;
+    if (lastTurnEventId.current && lastTurnEventId.current !== event.id) {
+      playTurnCue();
+    }
+    lastTurnEventId.current = event.id;
+  }, [playTurnCue, state?.lastEvent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -200,7 +212,8 @@ export function BattleBoard() {
   function beginAbility(ability: AbilityDefinition) {
     if (!state || !selected || !selectedOnBoard) return setNotice("Select one of your board cards first.");
     if (selected.activatedThisTurn.includes(ability.id)) return setNotice("That ability was already used this turn.");
-    const cooldownRemaining = getAbilityCooldownRemaining(selected, ability.id, state.turn);
+    const ownerTurnsStarted = selectedOwner?.turnsStarted ?? 0;
+    const cooldownRemaining = getAbilityCooldownRemaining(selected, ability.id, ownerTurnsStarted);
     if (cooldownRemaining > 0) return setNotice(`That ability is on cooldown for ${cooldownRemaining} more turn(s).`);
     setPendingAbilityId(ability.id);
     if (ability.requiresTarget) {
@@ -465,7 +478,8 @@ function ControlPanel({
           </button>
           <button type="button" onClick={onAttack} disabled={!selectedCanAttack || state.phase === "FINISHED"} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black text-white disabled:opacity-40">Attack</button>
           {activatedAbilities.length ? activatedAbilities.map((ability) => {
-            const cooldownRemaining = selected ? getAbilityCooldownRemaining(selected, ability.id, state.turn) : 0;
+            const selectedOwner = selected ? state.players.find((player) => player.playerId === selected.ownerId) : undefined;
+            const cooldownRemaining = selected ? getAbilityCooldownRemaining(selected, ability.id, selectedOwner?.turnsStarted ?? 0) : 0;
             return (
               <button
                 key={ability.id}

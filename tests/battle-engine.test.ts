@@ -97,6 +97,54 @@ function cooldownUnit(slug: string): CardTemplate {
   };
 }
 
+function necrpTuffLeader(): CardTemplate {
+  return {
+    ...leader,
+    slug: "necrp-tuff-edition",
+    name: "necrp (tuff edition)",
+    rarity: "DIVINE",
+    attack: 12,
+    health: 15,
+    size: 4,
+    aura: 12,
+    abilityData: [
+      {
+        id: "necrp-tuff-board-wipe",
+        label: "Tuff Sweep",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        cooldownTurns: 3,
+        effects: [{ type: "DAMAGE", target: "ENEMY_BOARD_CHARACTERS", amount: 8 }],
+      },
+    ],
+  };
+}
+
+function garrettPrimeLeader(): CardTemplate {
+  return {
+    ...leader,
+    slug: "garrett-prime",
+    name: "Garrett (Prime)",
+    rarity: "LEGENDARY",
+    attack: 8,
+    health: 10,
+    size: 2,
+    aura: 10,
+    abilityData: [
+      {
+        id: "garrett-prime-flex",
+        label: "Flex",
+        trigger: "ACTIVATED",
+        requiresTarget: true,
+        effects: [
+          { type: "DAMAGE", target: "ENEMY_CHARACTER", amount: 4 },
+          { type: "BLIND", target: "ENEMY_CHARACTER", amount: 1, duration: "TURN" },
+        ],
+      },
+    ],
+  };
+}
+
 function building(slug: string, attack = 0, health = 3): CardTemplate {
   return {
     slug,
@@ -268,7 +316,7 @@ cooldownState = applyAction(cooldownState, {
   sourceInstanceId: cooldownSource.instanceId,
   abilityId: "cooldown-unit-cooldown",
 });
-assert.equal(cooldownState.players[0].board[0].abilityCooldowns["cooldown-unit-cooldown"], 3, "cooldown should be stored against the source ability");
+assert.equal(cooldownState.players[0].board[0].abilityCooldowns["cooldown-unit-cooldown"], 4, "cooldown should be stored as the next owner turn where the ability is legal");
 cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[0].playerId });
 cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[1].playerId });
 assert.deepEqual(validateAction(cooldownState, {
@@ -276,7 +324,15 @@ assert.deepEqual(validateAction(cooldownState, {
   playerId: cooldownState.players[0].playerId,
   sourceInstanceId: cooldownState.players[0].board[0].instanceId,
   abilityId: "cooldown-unit-cooldown",
-}), { ok: false, reason: "Ability is on cooldown for 1 more turn(s)." }, "cooldown should still block on the next owner turn");
+}), { ok: false, reason: "Ability is on cooldown for 2 more turn(s)." }, "cooldown should block on the first owner turn after use");
+cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[0].playerId });
+cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[1].playerId });
+assert.deepEqual(validateAction(cooldownState, {
+  type: "USE_ABILITY",
+  playerId: cooldownState.players[0].playerId,
+  sourceInstanceId: cooldownState.players[0].board[0].instanceId,
+  abilityId: "cooldown-unit-cooldown",
+}), { ok: false, reason: "Ability is on cooldown for 1 more turn(s)." }, "cooldown should block for the second owner turn after use");
 cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[0].playerId });
 cooldownState = applyAction(cooldownState, { type: "END_TURN", playerId: cooldownState.players[1].playerId });
 assert.equal(validateAction(cooldownState, {
@@ -285,5 +341,85 @@ assert.equal(validateAction(cooldownState, {
   sourceInstanceId: cooldownState.players[0].board[0].instanceId,
   abilityId: "cooldown-unit-cooldown",
 }).ok, true, "cooldown should expire after the configured turns pass");
+
+let tuffState = createMatchState(
+  "necrp-tuff",
+  { id: "a", name: "A", deck: [necrpTuffLeader(), ...Array.from({ length: 10 }, (_, index) => unit(`a-tuff-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("enemy-character-a", 1, 10), unit("enemy-character-b", 1, 10), building("enemy-building", 0, 10), ...Array.from({ length: 8 }, (_, index) => unit(`b-tuff-extra-${index}`))] },
+  { seed: "necrp-tuff-seed", deterministic: true },
+);
+const tuffEnemyA = tuffState.players[1].hand.find((card) => card.template.slug === "enemy-character-a")!;
+const tuffEnemyB = tuffState.players[1].hand.find((card) => card.template.slug === "enemy-character-b")!;
+const tuffBuilding = tuffState.players[1].hand.find((card) => card.template.slug === "enemy-building")!;
+for (const card of [tuffEnemyA, tuffEnemyB, tuffBuilding]) {
+  tuffState.players[1].hand = tuffState.players[1].hand.filter((entry) => entry.instanceId !== card.instanceId);
+  card.zone = "BOARD";
+  tuffState.players[1].board.push(card);
+}
+const tuffLeaderHp = tuffState.players[1].leader.currentHealth;
+tuffState = applyAction(tuffState, {
+  type: "USE_ABILITY",
+  playerId: tuffState.players[0].playerId,
+  sourceInstanceId: tuffState.players[0].leader.instanceId,
+  abilityId: "necrp-tuff-board-wipe",
+});
+assert.equal(tuffState.players[1].board.find((card) => card.template.slug === "enemy-character-a")?.currentHealth, 2, "Tuff Sweep should damage the first enemy character");
+assert.equal(tuffState.players[1].board.find((card) => card.template.slug === "enemy-character-b")?.currentHealth, 2, "Tuff Sweep should damage the second enemy character");
+assert.equal(tuffState.players[1].board.find((card) => card.template.slug === "enemy-building")?.currentHealth, 10, "Tuff Sweep should not hit enemy buildings");
+assert.equal(tuffState.players[1].leader.currentHealth, tuffLeaderHp, "Tuff Sweep should not hit the enemy leader");
+assert.equal(tuffState.players[0].leader.abilityCooldowns["necrp-tuff-board-wipe"], 5, "Tuff Sweep should be unavailable until the fourth owner turn after use");
+for (const remaining of [3, 2, 1]) {
+  tuffState = applyAction(tuffState, { type: "END_TURN", playerId: tuffState.players[0].playerId });
+  tuffState = applyAction(tuffState, { type: "END_TURN", playerId: tuffState.players[1].playerId });
+  assert.deepEqual(validateAction(tuffState, {
+    type: "USE_ABILITY",
+    playerId: tuffState.players[0].playerId,
+    sourceInstanceId: tuffState.players[0].leader.instanceId,
+    abilityId: "necrp-tuff-board-wipe",
+  }), { ok: false, reason: `Ability is on cooldown for ${remaining} more turn(s).` }, `Tuff Sweep should still be on cooldown for ${remaining} owner turn(s)`);
+}
+tuffState = applyAction(tuffState, { type: "END_TURN", playerId: tuffState.players[0].playerId });
+tuffState = applyAction(tuffState, { type: "END_TURN", playerId: tuffState.players[1].playerId });
+assert.equal(validateAction(tuffState, {
+  type: "USE_ABILITY",
+  playerId: tuffState.players[0].playerId,
+  sourceInstanceId: tuffState.players[0].leader.instanceId,
+  abilityId: "necrp-tuff-board-wipe",
+}).ok, true, "Tuff Sweep should be usable on the fourth owner turn after use");
+
+let flexState = createMatchState(
+  "garrett-flex",
+  { id: "a", name: "A", deck: [garrettPrimeLeader(), ...Array.from({ length: 10 }, (_, index) => unit(`a-flex-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("flex-target", 2, 6), ...Array.from({ length: 9 }, (_, index) => unit(`b-flex-extra-${index}`))] },
+  { seed: "garrett-flex-seed", deterministic: true },
+);
+const flexTarget = flexState.players[1].hand.find((card) => card.template.slug === "flex-target")!;
+flexState.players[1].hand = flexState.players[1].hand.filter((card) => card.instanceId !== flexTarget.instanceId);
+flexTarget.zone = "BOARD";
+flexTarget.enteredTurn = 0;
+flexState.players[1].board.push(flexTarget);
+flexState = applyAction(flexState, {
+  type: "USE_ABILITY",
+  playerId: flexState.players[0].playerId,
+  sourceInstanceId: flexState.players[0].leader.instanceId,
+  abilityId: "garrett-prime-flex",
+  targetInstanceId: flexTarget.instanceId,
+});
+assert.equal(flexState.players[1].board[0].blindedUntilTurn, 2, "Flex should blind through the target owner's next turn");
+flexState = applyAction(flexState, { type: "END_TURN", playerId: flexState.players[0].playerId });
+assert.deepEqual(validateAction(flexState, {
+  type: "ATTACK",
+  playerId: flexState.players[1].playerId,
+  attackerInstanceId: flexState.players[1].board[0].instanceId,
+  targetInstanceId: flexState.players[0].leader.instanceId,
+}), { ok: false, reason: "Card is blinded." }, "Flex should block the target on its next owner turn");
+flexState = applyAction(flexState, { type: "END_TURN", playerId: flexState.players[1].playerId });
+flexState = applyAction(flexState, { type: "END_TURN", playerId: flexState.players[0].playerId });
+assert.equal(validateAction(flexState, {
+  type: "ATTACK",
+  playerId: flexState.players[1].playerId,
+  attackerInstanceId: flexState.players[1].board[0].instanceId,
+  targetInstanceId: flexState.players[0].leader.instanceId,
+}).ok, true, "Flex blind should expire after the target owner's next turn");
 
 console.log("battle engine tests passed");

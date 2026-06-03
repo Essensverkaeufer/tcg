@@ -4,6 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
+import { useSiteAudio } from "@/components/audio/SiteAudioProvider";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
@@ -18,9 +19,11 @@ type TargetMode = "inspect" | "attack" | "ability" | "item";
 
 export function OnlineBattleClient() {
   const { accessToken, user } = useAuth();
+  const { playTurnCue } = useSiteAudio();
   const configuredRealtimeUrl = process.env.NEXT_PUBLIC_REALTIME_URL ?? "";
   const realtimeUrl = configuredRealtimeUrl || (process.env.NODE_ENV === "development" ? "http://localhost:3001" : "");
   const socketRef = useRef<Socket | null>(null);
+  const previousActivePlayerRef = useRef<string | null>(null);
   const [status, setStatus] = useState<SocketStatus>(realtimeUrl ? "idle" : "error");
   const [message, setMessage] = useState(
     realtimeUrl
@@ -81,10 +84,23 @@ export function OnlineBattleClient() {
     };
   }, [accessToken, realtimeUrl]);
 
+  useEffect(() => {
+    if (!view) {
+      previousActivePlayerRef.current = null;
+      return;
+    }
+    const previous = previousActivePlayerRef.current;
+    if (previous && previous !== view.activePlayerId && view.activePlayerId === view.you && view.phase !== "FINISHED") {
+      playTurnCue();
+    }
+    previousActivePlayerRef.current = view.activePlayerId;
+  }, [playTurnCue, view]);
+
   const selected = useMemo(() => view && selectedId ? findVisibleCard(view, selectedId) : undefined, [selectedId, view]);
   const activePlayer = view?.players.find((player) => player.playerId === view.activePlayerId);
   const you = view?.players.find((player) => player.playerId === view.you);
   const opponent = view?.players.find((player) => player.playerId !== view.you);
+  const selectedOwner = selected && view ? view.players.find((player) => player.playerId === selected.ownerId) : undefined;
   const isYourTurn = Boolean(view && view.activePlayerId === view.you);
   const selectedIsYours = Boolean(selected && selected.ownerId === view?.you);
   const selectedInHand = Boolean(you?.hand.some((card) => !isHiddenCard(card) && card.instanceId === selectedId));
@@ -157,7 +173,7 @@ export function OnlineBattleClient() {
 
   function beginAbility(ability: AbilityDefinition) {
     if (!view || !selected || !selectedOnBoard || !isYourTurn) return;
-    const cooldownRemaining = getAbilityCooldownRemaining(selected, ability.id, view.turn);
+    const cooldownRemaining = getAbilityCooldownRemaining(selected, ability.id, selectedOwner?.turnsStarted ?? 0);
     if (cooldownRemaining > 0) {
       setMessage(`${ability.label} is on cooldown for ${cooldownRemaining} more turn(s).`);
       return;
@@ -212,7 +228,7 @@ export function OnlineBattleClient() {
               </button>
               <button type="button" onClick={beginAttack} disabled={!isYourTurn || !selectedOnBoard || !selectedIsYours} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black disabled:opacity-40">Attack</button>
               {activatedAbilities.length ? activatedAbilities.map((ability) => {
-                const cooldownRemaining = selected && view ? getAbilityCooldownRemaining(selected, ability.id, view.turn) : 0;
+                const cooldownRemaining = selected && view ? getAbilityCooldownRemaining(selected, ability.id, selectedOwner?.turnsStarted ?? 0) : 0;
                 return (
                   <button key={ability.id} type="button" onClick={() => beginAbility(ability)} disabled={!isYourTurn || !selectedOnBoard || !selectedIsYours || cooldownRemaining > 0} className="rounded-md bg-violet-500 px-3 py-2 text-sm font-black disabled:opacity-40">
                     Use {ability.label}{cooldownRemaining > 0 ? ` (CD ${cooldownRemaining})` : ""}

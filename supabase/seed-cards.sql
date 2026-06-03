@@ -61,7 +61,7 @@ values
   ),
   ('mwyi', 'mwyi', '', 'RARE', 'CHARACTER', 0, 0, 0, 0, '/card-art/mwyi.webp', '', '[]'::jsonb, 'prototype-0.1'),
   ('necrp', 'necrp', '', 'RARE', 'CHARACTER', 0, 0, 0, 0, '/card-art/necrp.webp', '', '[]'::jsonb, 'prototype-0.1'),
-  ('necrp-tuff-edition', 'necrp (tuff edition)', 'The featured constellation leader reward.', 'DIVINE', 'LEADER', 12, 15, 4, 12, '/card-art/necrp-tuff-edition.webp', 'Tuff enough to bend the pity counter.', '[]'::jsonb, 'prototype-0.1'),
+  ('necrp-tuff-edition', 'necrp (tuff edition)', 'necrp, but locked in and way more tuff.', 'DIVINE', 'LEADER', 12, 15, 4, 12, '/card-art/necrp-tuff-edition.webp', 'Same necrp. Heavier aura.', '[{"id":"necrp-tuff-board-wipe","label":"Tuff Sweep","trigger":"ACTIVATED","requiresTarget":false,"cooldownTurns":3,"effects":[{"type":"DAMAGE","target":"ENEMY_BOARD_CHARACTERS","amount":8}]}]'::jsonb, 'prototype-0.1'),
   ('anarchy', 'Anarchy', '', 'EPIC', 'CHARACTER', 0, 0, 0, 0, '/card-art/anarchy.webp', '', '[]'::jsonb, 'prototype-0.1'),
   ('buurazu', 'buurazu', '', 'MYTHIC', 'CHARACTER', 0, 0, 0, 0, '/card-art/buurazu.webp', '', '[]'::jsonb, 'prototype-0.1'),
   ('jpj', 'jpj', '', 'LEGENDARY', 'CHARACTER', 0, 0, 0, 0, '/card-art/jpj.webp', '', '[]'::jsonb, 'prototype-0.1'),

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
+import { SiteAudioProvider } from "@/components/audio/SiteAudioProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ensureProfileForUser } from "@/lib/supabase/profile";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
@@ -54,7 +55,9 @@ export default async function RootLayout({
       data-theme="dark"
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider {...initialAuth}>{children}</AuthProvider>
+        <AuthProvider {...initialAuth}>
+          <SiteAudioProvider>{children}</SiteAudioProvider>
+        </AuthProvider>
       </body>
     </html>
   );

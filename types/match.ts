@@ -36,6 +36,7 @@ export type MatchPlayerState = {
   energyCurrent: number;
   energyMax: number;
   hasStartedTurn: boolean;
+  turnsStarted: number;
   skippedOpeningDraw: boolean;
   playedCardsThisTurn: number;
   oncePerGameUsed: string[];
