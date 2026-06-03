@@ -5,7 +5,7 @@ export const necrpTuffGachaBanner = {
   name: "necrp Tuff Constellation",
   featuredSlug: "necrp-tuff-edition",
   pricePerPull: 100,
-  hardPity: 50,
+  hardPity: 100,
   allowedPullCounts: [1, 10] as const,
 };
 
@@ -23,8 +23,7 @@ export const gachaRarityRates: Array<{ rarity: Exclude<Rarity, "DIVINE">; rate: 
 export function getFeaturedChanceForNextPull(pullsSinceFeatured: number) {
   const nextPity = pullsSinceFeatured + 1;
   if (nextPity >= necrpTuffGachaBanner.hardPity) return 1;
-  if (nextPity <= 25) return 0.005;
-  return Math.min(0.65, 0.005 * 1.35 ** (nextPity - 25));
+  return Math.min(0.65, 0.005 * 1.05 ** (nextPity - 1));
 }
 
 export function getGuaranteedIn(pullsSinceFeatured: number) {

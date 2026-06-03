@@ -100,11 +100,15 @@ export function GachaClient() {
 
   useEffect(() => {
     if (!charging || revealed >= pullCards.length) return;
+    if (currentReward?.featured) {
+      const id = window.setTimeout(() => setCharging(false), 0);
+      return () => window.clearTimeout(id);
+    }
     const id = window.setTimeout(() => {
       setRevealed((current) => Math.min(pullCards.length, current + 1));
     }, revealed === 0 ? 760 : 560);
     return () => window.clearTimeout(id);
-  }, [charging, pullCards.length, revealed]);
+  }, [charging, currentReward, pullCards.length, revealed]);
 
   useEffect(() => {
     if (!charging || pullCards.length === 0 || revealed < pullCards.length) return;
