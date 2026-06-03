@@ -12,7 +12,8 @@ type SiteAudioContextValue = {
   isPlaying: boolean;
   hasTracks: boolean;
   currentTrackName: string;
-  toggleMusic: () => Promise<void>;
+  volume: number;
+  setMusicVolume: (nextVolume: number) => Promise<void>;
   playTurnCue: () => void;
   refreshMusic: () => Promise<void>;
 };
@@ -26,9 +27,10 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
   const queueRef = useRef<MusicTrack[]>([]);
   const currentTrackRef = useRef<MusicTrack | null>(null);
   const enabledRef = useRef(false);
+  const volumeRef = useRef(0);
   const playNextRef = useRef<() => Promise<void>>(async () => {});
 
-  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [volume, setVolumeState] = useState(() => readStoredVolume());
   const [isPlaying, setIsPlaying] = useState(false);
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null);
@@ -37,7 +39,7 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
     if (audioRef.current) return audioRef.current;
     const audio = new Audio();
     audio.preload = "auto";
-    audio.volume = 0.28;
+    audio.volume = volumeRef.current;
     audio.addEventListener("ended", () => {
       void playNextRef.current();
     });
@@ -75,7 +77,7 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playNext = useCallback(async () => {
-    if (!enabledRef.current) return;
+    if (!enabledRef.current || volumeRef.current <= 0) return;
     const track = takeNextTrack(tracksRef, queueRef, currentTrackRef);
     if (!track) {
       setIsPlaying(false);
@@ -84,7 +86,7 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
 
     const audio = ensureAudio();
     audio.src = track.url;
-    audio.volume = 0.28;
+    audio.volume = volumeRef.current;
     currentTrackRef.current = track;
     setCurrentTrack(track);
 
@@ -93,9 +95,10 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
       setIsPlaying(true);
     } catch {
       enabledRef.current = false;
-      setMusicEnabled(false);
+      volumeRef.current = 0;
+      setVolumeState(0);
       setIsPlaying(false);
-      window.localStorage.setItem("siteMusicEnabled", "false");
+      window.localStorage.setItem("siteMusicVolume", "0");
     }
   }, [ensureAudio]);
 
@@ -104,9 +107,12 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
   }, [playNext]);
 
   useEffect(() => {
-    enabledRef.current = musicEnabled;
-    window.localStorage.setItem("siteMusicEnabled", String(musicEnabled));
-  }, [musicEnabled]);
+    volumeRef.current = volume;
+    enabledRef.current = volume > 0;
+    if (audioRef.current) audioRef.current.volume = volume;
+    window.localStorage.setItem("siteMusicVolume", String(volume));
+    window.localStorage.setItem("siteMusicEnabled", String(volume > 0));
+  }, [volume]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -115,22 +121,25 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(id);
   }, [refreshMusic]);
 
-  const toggleMusic = useCallback(async () => {
-    if (musicEnabled) {
+  const setMusicVolume = useCallback(async (nextVolume: number) => {
+    const clampedVolume = clampVolume(nextVolume);
+    volumeRef.current = clampedVolume;
+    enabledRef.current = clampedVolume > 0;
+    setVolumeState(clampedVolume);
+
+    const audio = audioRef.current;
+    if (audio) audio.volume = clampedVolume;
+
+    if (clampedVolume <= 0) {
       enabledRef.current = false;
-      setMusicEnabled(false);
       setIsPlaying(false);
-      window.localStorage.setItem("siteMusicEnabled", "false");
       audioRef.current?.pause();
       return;
     }
 
-    enabledRef.current = true;
-    setMusicEnabled(true);
-    window.localStorage.setItem("siteMusicEnabled", "true");
     if (tracksRef.current.length === 0) await refreshMusic();
-    await playNext();
-  }, [musicEnabled, playNext, refreshMusic]);
+    if (!audioRef.current || audioRef.current.paused) await playNext();
+  }, [playNext, refreshMusic]);
 
   const playTurnCue = useCallback(() => {
     const browserWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
@@ -165,14 +174,15 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<SiteAudioContextValue>(() => ({
-    musicEnabled,
+    musicEnabled: volume > 0,
     isPlaying,
     hasTracks: tracks.length > 0,
     currentTrackName: currentTrack?.name ?? "",
-    toggleMusic,
+    volume,
+    setMusicVolume,
     playTurnCue,
     refreshMusic,
-  }), [currentTrack?.name, isPlaying, musicEnabled, playTurnCue, refreshMusic, toggleMusic, tracks.length]);
+  }), [currentTrack?.name, isPlaying, playTurnCue, refreshMusic, setMusicVolume, tracks.length, volume]);
 
   return <SiteAudioContext.Provider value={value}>{children}</SiteAudioContext.Provider>;
 }
@@ -208,4 +218,16 @@ function shuffleTracks(tracks: MusicTrack[], avoidFirstUrl?: string) {
     [copy[0], copy[1]] = [copy[1], copy[0]];
   }
   return copy;
+}
+
+function readStoredVolume() {
+  if (typeof window === "undefined") return 0;
+  const storedVolume = Number(window.localStorage.getItem("siteMusicVolume"));
+  if (Number.isFinite(storedVolume)) return clampVolume(storedVolume);
+  return window.localStorage.getItem("siteMusicEnabled") === "true" ? 0.28 : 0;
+}
+
+function clampVolume(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
 }

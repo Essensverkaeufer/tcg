@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Boxes, CircleUserRound, Coins, Music2, Swords, VolumeX } from "lucide-react";
+import { Boxes, CircleUserRound, Coins, Swords, Volume2, VolumeX } from "lucide-react";
 import { useSiteAudio } from "@/components/audio/SiteAudioProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -18,7 +18,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, user, signOut } = useAuth();
-  const { currentTrackName, hasTracks, isPlaying, musicEnabled, toggleMusic } = useSiteAudio();
+  const { currentTrackName, hasTracks, volume, setMusicVolume } = useSiteAudio();
 
   async function handleLogout() {
     await signOut();
@@ -42,16 +42,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="flex items-center gap-3 text-sm">
             <ThemeToggle />
-            <button
-              type="button"
-              onClick={() => void toggleMusic()}
-              disabled={!hasTracks}
-              title={hasTracks ? (currentTrackName ? `Music: ${currentTrackName}` : "Music") : "Add music files to public/music"}
-              className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-black hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+            <label
+              title={hasTracks ? (currentTrackName ? `Music: ${currentTrackName}` : "Music volume") : "Add music files to public/music"}
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-black text-slate-700"
             >
-              {musicEnabled && isPlaying ? <Music2 className="h-4 w-4" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
+              {volume > 0 ? <Volume2 className="h-4 w-4" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
               <span className="hidden sm:inline">Music</span>
-            </button>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round(volume * 100)}
+                onChange={(event) => void setMusicVolume(Number(event.currentTarget.value) / 100)}
+                disabled={!hasTracks}
+                aria-label="Music volume"
+                className="h-2 w-24 cursor-pointer accent-rose-600 disabled:cursor-not-allowed disabled:opacity-45"
+              />
+            </label>
             <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 font-bold text-amber-800">
               <Coins className="h-4 w-4" aria-hidden />
               {profile?.coins ?? 0}
