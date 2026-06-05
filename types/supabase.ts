@@ -65,6 +65,58 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["card_templates"]["Insert"]>;
         Relationships: [];
       };
+      card_template_submissions: {
+        Row: {
+          id: string;
+          submitter_id: string;
+          reviewer_id: string | null;
+          status: "PENDING" | "APPROVED";
+          slug: string;
+          name: string;
+          description: string;
+          rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | "MYTHIC" | "ULTRA_LEGENDARY" | "DIVINE";
+          card_type: "CHARACTER" | "BUILDING" | "ITEM" | "LEADER";
+          attack: number;
+          health: number;
+          size: number;
+          aura: number;
+          image_url: string;
+          image_path: string | null;
+          sound_effect_url: string;
+          sound_effect_path: string | null;
+          flavor_text: string | null;
+          ability_data: Json;
+          submitted_at: string;
+          reviewed_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          submitter_id: string;
+          reviewer_id?: string | null;
+          status?: Database["public"]["Tables"]["card_template_submissions"]["Row"]["status"];
+          slug: string;
+          name: string;
+          description?: string;
+          rarity: Database["public"]["Tables"]["card_template_submissions"]["Row"]["rarity"];
+          card_type: Database["public"]["Tables"]["card_template_submissions"]["Row"]["card_type"];
+          attack?: number;
+          health?: number;
+          size?: number;
+          aura?: number;
+          image_url?: string;
+          image_path?: string | null;
+          sound_effect_url?: string;
+          sound_effect_path?: string | null;
+          flavor_text?: string | null;
+          ability_data?: Json;
+          submitted_at?: string;
+          reviewed_at?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["card_template_submissions"]["Insert"]>;
+        Relationships: [];
+      };
       user_card_collection: {
         Row: {
           id: string;

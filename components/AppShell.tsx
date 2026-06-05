@@ -12,6 +12,7 @@ const navItems = [
   ["Decks", "/decks"],
   ["Packs", "/packs"],
   ["Gacha", "/gacha"],
+  ["Create Card", "/create-card"],
   ["Battle", "/matchmaking"],
   ["Admin", "/admin/cards"],
 ] as const;

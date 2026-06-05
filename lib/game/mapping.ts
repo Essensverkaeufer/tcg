@@ -33,7 +33,7 @@ export function cardTemplateToInsert(card: CardTemplate): Database["public"]["Ta
     size: card.size,
     aura: card.aura,
     image_url: card.imageUrl,
-    sound_effect_url: card.soundEffectUrl ?? null,
+    sound_effect_url: card.soundEffectUrl ?? "",
     flavor_text: card.flavorText,
     ability_data: card.abilityData as Json,
     balance_version: "prototype-0.1",
