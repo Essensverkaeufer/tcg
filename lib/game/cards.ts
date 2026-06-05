@@ -5,6 +5,7 @@ function zeroStatCard(
   name: string,
   rarity: CardTemplate["rarity"],
   cardType: CardTemplate["cardType"],
+  category?: string,
 ): CardTemplate {
   return {
     slug,
@@ -17,6 +18,7 @@ function zeroStatCard(
     health: 0,
     size: 0,
     aura: 0,
+    category,
     imageUrl: `/card-art/${slug}.webp`,
     abilityData: [],
   };
@@ -55,6 +57,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 10,
     size: 2,
     aura: 10,
+    category: "BASED",
     imageUrl: "/card-art/garrett-prime.webp",
     abilityData: [
       {
@@ -80,6 +83,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 7,
     size: 5,
     aura: 4,
+    category: "AMERICAN",
     imageUrl: "/card-art/rowletforsenator.webp",
     abilityData: [
       {
@@ -93,7 +97,7 @@ export const cardCatalog: CardTemplate[] = [
       },
     ],
   },
-  zeroStatCard("mwyi", "mwyi", "RARE", "CHARACTER"),
+  zeroStatCard("mwyi", "mwyi", "RARE", "CHARACTER", "MINOR"),
   zeroStatCard("necrp", "necrp", "RARE", "CHARACTER"),
   {
     slug: "necrp-tuff-edition",
@@ -159,6 +163,7 @@ export const cardCatalog: CardTemplate[] = [
     health: 1,
     size: 1,
     aura: 1,
+    category: "AMERICAN",
     imageUrl: "/card-art/tyler-robinson.webp",
     abilityData: [
       {
@@ -173,19 +178,19 @@ export const cardCatalog: CardTemplate[] = [
       },
     ],
   },
-  zeroStatCard("charlie-kirk", "Charlie Kirk", "EPIC", "CHARACTER"),
+  zeroStatCard("charlie-kirk", "Charlie Kirk", "EPIC", "CHARACTER", "AMERICAN"),
   zeroStatCard("ada-printa", "ada printa", "COMMON", "CHARACTER"),
   zeroStatCard("eth22", "eth22", "RARE", "CHARACTER"),
   zeroStatCard("frenchplaty", "frenchplaty", "RARE", "CHARACTER"),
   zeroStatCard("tweeku", "tweeku", "RARE", "CHARACTER"),
   zeroStatCard("mwyi-inactive", "mwyi (inactive)", "MYTHIC", "CHARACTER"),
-  zeroStatCard("vanessa", "Vanessa", "EPIC", "CHARACTER"),
+  zeroStatCard("vanessa", "Vanessa", "EPIC", "CHARACTER", "AMERICAN"),
   zeroStatCard("the1nutbandit", "the1nutbandit", "ULTRA_LEGENDARY", "CHARACTER"),
   zeroStatCard("pacmanpowerghost", "pacmanpowerghost", "RARE", "CHARACTER"),
   zeroStatCard("kyu-sugardust", "Kyu Sugardust", "COMMON", "CHARACTER"),
   zeroStatCard("benjamin-netanyahu", "Benjamin Netanyahu", "COMMON", "CHARACTER"),
   zeroStatCard("tahm-kench", "Tahm Kench", "COMMON", "CHARACTER"),
-  zeroStatCard("necrps-drunken-dad", "necrps drunken dad", "MYTHIC", "CHARACTER"),
+  zeroStatCard("necrps-drunken-dad", "necrps drunken dad", "MYTHIC", "CHARACTER", "BASED"),
   {
     slug: "gabriela-stein",
     name: "Gabriela Stein",
@@ -204,13 +209,13 @@ export const cardCatalog: CardTemplate[] = [
   zeroStatCard("hunie-pop-speedrunning", "Hunie Pop Speedrunning", "COMMON", "BUILDING"),
   zeroStatCard("huniepotheads", "HuniePotHeads", "RARE", "BUILDING"),
   zeroStatCard("poland", "Poland", "EPIC", "BUILDING"),
-  zeroStatCard("florida", "Florida", "EPIC", "BUILDING"),
-  zeroStatCard("texas", "Texas", "EPIC", "BUILDING"),
+  zeroStatCard("florida", "Florida", "EPIC", "BUILDING", "AMERICAN"),
+  zeroStatCard("texas", "Texas", "EPIC", "BUILDING", "AMERICAN"),
   zeroStatCard("jpjs-basement", "jpjs Basement", "MYTHIC", "BUILDING"),
-  zeroStatCard("white-monster", "White Monster", "RARE", "ITEM"),
-  zeroStatCard("the-bong", "The Bong", "LEGENDARY", "ITEM"),
-  zeroStatCard("assault-rifle", "assault rifle", "EPIC", "ITEM"),
-  zeroStatCard("zubr-beer", "zubr beer", "MYTHIC", "ITEM"),
+  zeroStatCard("white-monster", "White Monster", "RARE", "ITEM", "BASED"),
+  zeroStatCard("the-bong", "The Bong", "LEGENDARY", "ITEM", "AMERICAN"),
+  zeroStatCard("assault-rifle", "assault rifle", "EPIC", "ITEM", "AMERICAN"),
+  zeroStatCard("zubr-beer", "zubr beer", "MYTHIC", "ITEM", "BASED"),
 ];
 
 export function getCardBySlug(slug: string) {

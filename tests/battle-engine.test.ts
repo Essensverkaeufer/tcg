@@ -19,7 +19,7 @@ const leader: CardTemplate = {
   abilityData: [],
 };
 
-function unit(slug: string, attack = 1, health = 2): CardTemplate {
+function unit(slug: string, attack = 1, health = 2, category?: string): CardTemplate {
   return {
     slug,
     name: slug,
@@ -31,6 +31,24 @@ function unit(slug: string, attack = 1, health = 2): CardTemplate {
     health,
     size: 1,
     aura: 0,
+    category,
+    imageUrl: "",
+    abilityData: [],
+  };
+}
+
+function testItem(slug: string, attack: number, health: number, aura: number): CardTemplate {
+  return {
+    slug,
+    name: slug,
+    description: "Item",
+    flavorText: "",
+    rarity: "COMMON",
+    cardType: "ITEM",
+    attack,
+    health,
+    size: 1,
+    aura,
     imageUrl: "",
     abilityData: [],
   };
@@ -297,6 +315,81 @@ assert.equal(noCardsState.phase, "MAIN", "drawing with no deck and no graveyard 
 assert.equal(noCardsState.activePlayerId, "b", "turn should still pass when no cards are available to draw");
 assert.equal(noCardsState.messages.includes("B had no cards to draw."), true, "turn log should explain the skipped draw");
 assert.equal(noCardsState.messages.some((message) => message.includes("hit 0 HP")), false, "empty draw should not create a fake leader-death message");
+
+function comboState(target: CardTemplate, itemCard: CardTemplate) {
+  const match = createMatchState(
+    `${target.slug}-${itemCard.slug}`,
+    { id: "a", name: "A", deck: [leader, itemCard, target, ...Array.from({ length: 3 }, (_, index) => unit(`combo-extra-${index}`))] },
+    { id: "b", name: "B", deck: deck("b-combo") },
+    { seed: `${target.slug}-${itemCard.slug}-seed`, deterministic: true },
+  );
+  const stagedTarget = match.players[0].hand.find((card) => card.template.slug === target.slug)!;
+  match.players[0].hand = match.players[0].hand.filter((card) => card.instanceId !== stagedTarget.instanceId);
+  stagedTarget.zone = "BOARD";
+  stagedTarget.enteredTurn = 0;
+  match.players[0].board.push(stagedTarget);
+  match.players[0].energyCurrent = 10;
+  return match;
+}
+
+function equipFirstItem(match: ReturnType<typeof createMatchState>, targetInstanceId: string) {
+  const itemCard = match.players[0].hand.find((card) => card.template.cardType === "ITEM")!;
+  return applyAction(match, {
+    type: "PLAY_CARD",
+    playerId: match.players[0].playerId,
+    cardInstanceId: itemCard.instanceId,
+    targetInstanceId,
+  });
+}
+
+let zubrCombo = comboState(
+  { ...unit("necrps-drunken-dad", 10, 6, "BASED"), aura: 9 },
+  testItem("zubr-beer", 10, 9, 9),
+);
+zubrCombo = equipFirstItem(zubrCombo, zubrCombo.players[0].board[0].instanceId);
+assert.equal(zubrCombo.players[0].board[0].currentAttack, 40, "zubr beer should give necrps drunken dad triple attack buffs");
+assert.equal(zubrCombo.players[0].board[0].currentHealth, 33, "zubr beer should give necrps drunken dad triple health buffs");
+assert.equal(zubrCombo.players[0].board[0].currentAura, 36, "zubr beer should give necrps drunken dad triple aura buffs");
+assert.equal(zubrCombo.messages.includes("Combo! zubr-beer gave necrps-drunken-dad 3x buffs."), true, "zubr combo should be logged");
+
+let monsterCombo = comboState(
+  { ...unit("mwyi", 6, 4, "MINOR"), aura: 5 },
+  testItem("white-monster", 9, 2, 7),
+);
+monsterCombo = equipFirstItem(monsterCombo, monsterCombo.players[0].board[0].instanceId);
+assert.equal(monsterCombo.players[0].board[0].currentAttack, 33, "White Monster should give mwyi triple attack buffs");
+assert.equal(monsterCombo.players[0].board[0].currentHealth, 10, "White Monster should give mwyi triple health buffs");
+assert.equal(monsterCombo.players[0].board[0].currentAura, 26, "White Monster should give mwyi triple aura buffs");
+
+let bongCombo = createMatchState(
+  "bong-combo",
+  { id: "a", name: "A", deck: [garrettPrimeLeader(), testItem("the-bong", 6, 9, 8), ...Array.from({ length: 4 }, (_, index) => unit(`bong-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-bong") },
+  { seed: "bong-combo-seed", deterministic: true },
+);
+bongCombo.players[0].energyCurrent = 10;
+bongCombo = equipFirstItem(bongCombo, bongCombo.players[0].leader.instanceId);
+assert.equal(bongCombo.players[0].leader.currentAttack, 26, "The Bong should give Garrett Prime triple attack buffs");
+assert.equal(bongCombo.players[0].leader.currentHealth, 77, "The Bong should give Garrett Prime triple health buffs");
+assert.equal(bongCombo.players[0].leader.currentAura, 34, "The Bong should give Garrett Prime triple aura buffs");
+
+let rifleCombo = comboState(
+  { ...unit("american-target", 2, 3, "AMERICAN"), aura: 0 },
+  testItem("assault-rifle", 10, 3, 2),
+);
+rifleCombo = equipFirstItem(rifleCombo, rifleCombo.players[0].board[0].instanceId);
+assert.equal(rifleCombo.players[0].board[0].currentAttack, 32, "assault rifle should give American characters triple attack buffs");
+assert.equal(rifleCombo.players[0].board[0].currentHealth, 12, "assault rifle should give American characters triple health buffs");
+assert.equal(rifleCombo.players[0].board[0].currentAura, 6, "assault rifle should give American characters triple aura buffs");
+
+let rifleNormal = comboState(
+  { ...unit("non-american-target", 2, 3, "BASED"), aura: 0 },
+  testItem("assault-rifle", 10, 3, 2),
+);
+rifleNormal = equipFirstItem(rifleNormal, rifleNormal.players[0].board[0].instanceId);
+assert.equal(rifleNormal.players[0].board[0].currentAttack, 12, "assault rifle should stay normal on non-American characters");
+assert.equal(rifleNormal.players[0].board[0].currentHealth, 6, "assault rifle should stay normal health on non-American characters");
+assert.equal(rifleNormal.messages.some((message) => message.startsWith("Combo!")), false, "normal item attachment should not log a combo");
 
 const protectedState = createMatchState(
   "building-protect",

@@ -195,12 +195,19 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
 
     if (card.template.cardType === "ITEM") {
       const target = [player.leader, ...player.board].find((entry) => entry.instanceId === action.targetInstanceId)!;
+      const comboMultiplier = getItemComboMultiplier(card.template, target.template);
+      const attackBuff = card.currentAttack * comboMultiplier;
+      const healthBuff = card.currentHealth * comboMultiplier;
+      const auraBuff = card.currentAura * comboMultiplier;
       card.zone = "ATTACHED";
       target.attachedItems.push(card);
-      target.currentAttack += card.currentAttack;
-      target.currentHealth += card.currentHealth;
-      target.currentMaxHealth += card.currentHealth;
-      target.currentAura += card.currentAura;
+      target.currentAttack += attackBuff;
+      target.currentHealth += healthBuff;
+      target.currentMaxHealth += healthBuff;
+      target.currentAura += auraBuff;
+      if (comboMultiplier > 1) {
+        messages.push(`Combo! ${card.template.name} gave ${target.template.name} ${comboMultiplier}x buffs.`);
+      }
       messages.push(`${card.template.name} equipped ${target.template.name}.`);
     } else {
       card.zone = "BOARD";
@@ -339,6 +346,18 @@ function getEnergyForPlayerTurn(state: MatchState, player: MatchPlayerState) {
   const normalEnergy = STARTING_ENERGY + Math.max(0, player.turnsStarted - 1) * ENERGY_GAIN_PER_TURN;
   const secondPlayerBonus = player.playerId !== state.firstPlayerId && player.turnsStarted <= 2 ? 1 : 0;
   return Math.min(MAX_ENERGY, normalEnergy + secondPlayerBonus);
+}
+
+function getItemComboMultiplier(item: CardTemplate, target: CardTemplate) {
+  if (item.slug === "zubr-beer" && target.slug === "necrps-drunken-dad") return 3;
+  if (item.slug === "white-monster" && target.slug === "mwyi") return 3;
+  if (item.slug === "the-bong" && target.slug === "garrett-prime") return 3;
+  if (item.slug === "assault-rifle" && target.cardType === "CHARACTER" && isAmericanCard(target)) return 3;
+  return 1;
+}
+
+function isAmericanCard(card: CardTemplate) {
+  return card.category?.toUpperCase() === "AMERICAN";
 }
 
 function instantiateCard(template: CardTemplate, ownerId: string, zone: CardInstance["zone"], index: number, options: { deterministic?: boolean; seed?: string }): CardInstance {

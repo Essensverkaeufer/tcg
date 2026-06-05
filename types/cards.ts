@@ -93,6 +93,7 @@ export type CardTemplate = {
   health: number;
   size: number;
   aura: number;
+  category?: string;
   imageUrl: string;
   soundEffectUrl?: string;
   abilityData: AbilityDefinition[];
