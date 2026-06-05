@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { isAdminUsername } from "@/lib/admin";
 import { rarityValues } from "@/lib/game/rarities";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 import type { Json } from "@/types/supabase";
@@ -27,8 +28,8 @@ export async function POST(request: Request) {
   if (profile.error) {
     return NextResponse.json({ error: profile.error.message }, { status: 500 });
   }
-  if (profile.data.username !== "essens") {
-    return NextResponse.json({ error: "Card admin is only available for essens." }, { status: 403 });
+  if (!isAdminUsername(profile.data.username)) {
+    return NextResponse.json({ error: "Card admin is only available for essens and essens2." }, { status: 403 });
   }
 
   const parsed = cardSchema.safeParse(await request.json());

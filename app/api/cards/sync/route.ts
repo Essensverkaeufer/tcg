@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminUsername } from "@/lib/admin";
 import { cardCatalog } from "@/lib/game/cards";
 import { cardTemplateToInsert } from "@/lib/game/mapping";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
@@ -11,8 +12,8 @@ export async function POST(request: Request) {
   if (profile.error) {
     return NextResponse.json({ error: profile.error.message }, { status: 500 });
   }
-  if (profile.data.username !== "essens") {
-    return NextResponse.json({ error: "Card sync is only available for essens." }, { status: 403 });
+  if (!isAdminUsername(profile.data.username)) {
+    return NextResponse.json({ error: "Card sync is only available for essens and essens2." }, { status: 403 });
   }
 
   const rows = cardCatalog.map(cardTemplateToInsert);
