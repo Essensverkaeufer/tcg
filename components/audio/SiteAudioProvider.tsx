@@ -14,6 +14,7 @@ type SiteAudioContextValue = {
   currentTrackName: string;
   volume: number;
   setMusicVolume: (nextVolume: number) => Promise<void>;
+  skipMusic: () => Promise<void>;
   playTurnCue: () => void;
   refreshMusic: () => Promise<void>;
 };
@@ -141,6 +142,16 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
     if (!audioRef.current || audioRef.current.paused) await playNext();
   }, [playNext, refreshMusic]);
 
+  const skipMusic = useCallback(async () => {
+    if (tracksRef.current.length === 0) await refreshMusic();
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    await playNext();
+  }, [playNext, refreshMusic]);
+
   const playTurnCue = useCallback(() => {
     const browserWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
     const AudioContextConstructor = window.AudioContext ?? browserWindow.webkitAudioContext;
@@ -180,9 +191,10 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
     currentTrackName: currentTrack?.name ?? "",
     volume,
     setMusicVolume,
+    skipMusic,
     playTurnCue,
     refreshMusic,
-  }), [currentTrack?.name, isPlaying, playTurnCue, refreshMusic, setMusicVolume, tracks.length, volume]);
+  }), [currentTrack?.name, isPlaying, playTurnCue, refreshMusic, setMusicVolume, skipMusic, tracks.length, volume]);
 
   return <SiteAudioContext.Provider value={value}>{children}</SiteAudioContext.Provider>;
 }

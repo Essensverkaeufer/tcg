@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Boxes, CircleUserRound, Coins, Swords, Volume2, VolumeX } from "lucide-react";
+import { Boxes, CircleUserRound, Coins, SkipForward, Swords, Volume2, VolumeX } from "lucide-react";
 import { useSiteAudio } from "@/components/audio/SiteAudioProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -18,7 +18,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, user, signOut } = useAuth();
-  const { currentTrackName, hasTracks, volume, setMusicVolume } = useSiteAudio();
+  const { currentTrackName, hasTracks, volume, setMusicVolume, skipMusic } = useSiteAudio();
 
   async function handleLogout() {
     await signOut();
@@ -60,6 +60,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="h-2 w-24 cursor-pointer accent-rose-600 disabled:cursor-not-allowed disabled:opacity-45"
               />
             </label>
+            <button
+              type="button"
+              onClick={() => void skipMusic()}
+              disabled={!hasTracks || volume <= 0}
+              title={hasTracks ? "Skip music track" : "Add music files to public/music"}
+              aria-label="Skip music track"
+              className="rounded-md border border-slate-200 p-2 text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <SkipForward className="h-4 w-4" aria-hidden />
+            </button>
             <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 font-bold text-amber-800">
               <Coins className="h-4 w-4" aria-hidden />
               {profile?.coins ?? 0}

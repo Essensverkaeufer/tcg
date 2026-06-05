@@ -5,11 +5,10 @@ import { useMemo, useState } from "react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { uploadProfilePicture } from "@/lib/supabase/avatars";
 
 export function ProfileClient() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
-  const { profile, refreshProfile, user } = useAuth();
+  const { accessToken, profile, refreshProfile, refreshSession, user } = useAuth();
   const [bioDraft, setBioDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -55,8 +54,17 @@ export function ProfileClient() {
     setMessage("");
 
     try {
-      await uploadProfilePicture({ supabase, userId: user.id, file });
-      await refreshProfile();
+      const formData = new FormData();
+      formData.set("avatar", file);
+      const response = await fetch("/api/profile/avatar", {
+        method: "POST",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: formData,
+        credentials: "same-origin",
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Could not upload profile picture.");
+      await refreshSession();
       setMessage("Profile picture updated.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not upload profile picture.");
