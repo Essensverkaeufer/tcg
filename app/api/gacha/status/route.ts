@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getFeaturedChanceForNextPull, getGuaranteedIn, necrpTuffGachaBanner } from "@/lib/game/gacha";
+import { defaultGachaBanner, getFeaturedChanceForNextPull, getGachaBanner, getGuaranteedIn, type GachaBanner } from "@/lib/game/gacha";
 import { ensureFeaturedGachaCard } from "@/lib/game/gacha-server";
 import { cardRowToTemplate } from "@/lib/game/mapping";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 type CardRow = Database["public"]["Tables"]["card_templates"]["Row"];
 
 function buildStatus({
+  banner,
   coins,
   featuredCard,
   featuredOwned,
@@ -18,6 +19,7 @@ function buildStatus({
   totalPulls,
   history,
 }: {
+  banner: GachaBanner;
   coins: number;
   featuredCard: CardRow;
   featuredOwned: number;
@@ -28,8 +30,8 @@ function buildStatus({
 }) {
   return {
     banner: {
-      ...necrpTuffGachaBanner,
-      nextFeaturedChance: getFeaturedChanceForNextPull(pullsSinceFeatured),
+      ...banner,
+      nextFeaturedChance: getFeaturedChanceForNextPull(pullsSinceFeatured, banner),
     },
     coins,
     featuredCard: cardRowToTemplate(featuredCard),
@@ -38,7 +40,7 @@ function buildStatus({
       totalPulls,
       featuredCopies,
       featuredOwned,
-      guaranteedIn: getGuaranteedIn(pullsSinceFeatured),
+      guaranteedIn: getGuaranteedIn(pullsSinceFeatured, banner),
     },
     history: history.map((entry) => ({
       id: entry.id,
@@ -57,8 +59,14 @@ export async function GET(request: Request) {
   const auth = await requireSupabaseUser(request);
   if ("error" in auth) return auth.error;
 
+  const requestedSlug = new URL(request.url).searchParams.get("bannerSlug") ?? defaultGachaBanner.slug;
+  const banner = getGachaBanner(requestedSlug);
+  if (!banner) {
+    return NextResponse.json({ error: "Gacha banner not found." }, { status: 404 });
+  }
+
   try {
-    const featuredCard = await ensureFeaturedGachaCard(auth.supabase);
+    const featuredCard = await ensureFeaturedGachaCard(auth.supabase, banner);
 
     const [profileResult, pityResult, collectionResult, historyResult] = await Promise.all([
       auth.supabase.from("profiles").select("coins").eq("id", auth.user.id).single(),
@@ -66,7 +74,7 @@ export async function GET(request: Request) {
         .from("gacha_pity")
         .select("*")
         .eq("user_id", auth.user.id)
-        .eq("banner_slug", necrpTuffGachaBanner.slug)
+        .eq("banner_slug", banner.slug)
         .maybeSingle(),
       auth.supabase
         .from("user_card_collection")
@@ -78,7 +86,7 @@ export async function GET(request: Request) {
         .from("gacha_pull_history")
         .select("*")
         .eq("user_id", auth.user.id)
-        .eq("banner_slug", necrpTuffGachaBanner.slug)
+        .eq("banner_slug", banner.slug)
         .order("created_at", { ascending: false })
         .limit(8),
     ]);
@@ -89,6 +97,7 @@ export async function GET(request: Request) {
     if (historyResult.error) throw new Error(historyResult.error.message);
 
     return NextResponse.json(buildStatus({
+      banner,
       coins: profileResult.data.coins,
       featuredCard,
       featuredOwned: collectionResult.data?.quantity ?? 0,

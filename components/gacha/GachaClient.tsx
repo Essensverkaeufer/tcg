@@ -1,12 +1,13 @@
 "use client";
 
 import clsx from "clsx";
-import { Coins, Gem, History, LoaderCircle, Sparkles, Star, Zap } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Coins, Gem, History, LoaderCircle, Sparkles, Star, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CardFrame } from "@/components/cards/CardFrame";
-import { gachaRarityRates, getFeaturedChanceForNextPull, getGuaranteedIn, necrpTuffGachaBanner } from "@/lib/game/gacha";
+import { gachaRarityRates, getFeaturedChanceForNextPull, getGachaBanner, getGuaranteedIn, type GachaBanner } from "@/lib/game/gacha";
 import { getRarityTheme } from "@/lib/game/rarities";
 import type { CardTemplate } from "@/types/cards";
 
@@ -32,7 +33,7 @@ type GachaHistoryEntry = {
 };
 
 type GachaStatus = {
-  banner: typeof necrpTuffGachaBanner & { nextFeaturedChance: number };
+  banner: GachaBanner & { nextFeaturedChance: number };
   coins: number;
   featuredCard: CardTemplate;
   pity: {
@@ -50,8 +51,9 @@ function rewardsFromHistory(value: unknown): GachaReward[] {
   return value.filter((entry): entry is GachaReward => Boolean(entry && typeof entry === "object" && "name" in entry));
 }
 
-export function GachaClient() {
+export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
   const { accessToken, refreshProfile } = useAuth();
+  const banner = useMemo(() => getGachaBanner(bannerSlug), [bannerSlug]);
   const [status, setStatus] = useState<GachaStatus | null>(null);
   const [visibleCoins, setVisibleCoins] = useState<number | null>(null);
   const [message, setMessage] = useState("");
@@ -65,6 +67,7 @@ export function GachaClient() {
   const [revealed, setRevealed] = useState(0);
   const [charging, setCharging] = useState(false);
 
+  const activeBanner = status?.banner ?? banner;
   const currentCard = revealed > 0 ? pullCards[revealed - 1] : null;
   const currentReward = revealed > 0 ? pullRewards[revealed - 1] : null;
   const hasFeaturedReveal = pullRewards.slice(0, revealed).some((reward) => reward.featured);
@@ -75,7 +78,7 @@ export function GachaClient() {
       return {
         ...status.pity,
         pullsSinceFeatured: pullStartPity,
-        guaranteedIn: getGuaranteedIn(pullStartPity),
+        guaranteedIn: activeBanner ? getGuaranteedIn(pullStartPity, activeBanner) : status.pity.guaranteedIn,
       };
     }
 
@@ -89,16 +92,16 @@ export function GachaClient() {
       totalPulls: status.pity.totalPulls + revealed,
       featuredCopies: status.pity.featuredCopies + featuredHits,
       featuredOwned: status.pity.featuredOwned + featuredHits,
-      guaranteedIn: getGuaranteedIn(latest.pityAfter),
+      guaranteedIn: activeBanner ? getGuaranteedIn(latest.pityAfter, activeBanner) : status.pity.guaranteedIn,
     };
-  }, [pullRewards, pullSettled, pullStartPity, revealed, status]);
+  }, [activeBanner, pullRewards, pullSettled, pullStartPity, revealed, status]);
   const displayCoins = visibleCoins ?? status?.coins ?? 0;
   const revealPausedOnFeatured = heldFeaturedIndex !== null && revealed < pullCards.length;
   const pullLocked = Boolean(busyPull) || !pullSettled;
-  const canPullOne = displayCoins >= necrpTuffGachaBanner.pricePerPull;
-  const canPullTen = displayCoins >= necrpTuffGachaBanner.pricePerPull * 10;
-  const pityPercent = Math.min(100, ((displayPity?.pullsSinceFeatured ?? 0) / necrpTuffGachaBanner.hardPity) * 100);
-  const displayedFeaturedChance = getFeaturedChanceForNextPull(displayPity?.pullsSinceFeatured ?? 0);
+  const canPullOne = activeBanner ? displayCoins >= activeBanner.pricePerPull : false;
+  const canPullTen = activeBanner ? displayCoins >= activeBanner.pricePerPull * 10 : false;
+  const pityPercent = activeBanner ? Math.min(100, ((displayPity?.pullsSinceFeatured ?? 0) / activeBanner.hardPity) * 100) : 0;
+  const displayedFeaturedChance = activeBanner ? getFeaturedChanceForNextPull(displayPity?.pullsSinceFeatured ?? 0, activeBanner) : 0;
   const stageGlow = useMemo(() => {
     if (currentReward?.featured) return "from-cyan-300/60 via-white/30 to-amber-200/40";
     if (currentCard) return getRarityTheme(currentCard.rarity).glow;
@@ -106,10 +109,10 @@ export function GachaClient() {
   }, [currentCard, currentReward]);
 
   const loadStatus = useCallback(async () => {
-    if (!accessToken) return;
+    if (!accessToken || !banner) return;
     setLoading(true);
     setMessage("");
-    const response = await fetch("/api/gacha/status", {
+    const response = await fetch(`/api/gacha/status?bannerSlug=${encodeURIComponent(banner.slug)}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
       credentials: "same-origin",
@@ -122,7 +125,7 @@ export function GachaClient() {
     }
     setStatus(payload);
     setVisibleCoins(payload.coins);
-  }, [accessToken]);
+  }, [accessToken, banner]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -164,7 +167,7 @@ export function GachaClient() {
   }
 
   async function pull(count: 1 | 10) {
-    if (!accessToken || pullLocked) return;
+    if (!accessToken || !activeBanner || pullLocked) return;
     const startingPity = displayPity?.pullsSinceFeatured ?? 0;
     setBusyPull(count);
     setMessage("");
@@ -183,7 +186,7 @@ export function GachaClient() {
         Authorization: `Bearer ${accessToken}`,
       },
       credentials: "same-origin",
-      body: JSON.stringify({ bannerSlug: necrpTuffGachaBanner.slug, pullCount: count }),
+      body: JSON.stringify({ bannerSlug: activeBanner.slug, pullCount: count }),
     });
     const payload = await response.json();
     setBusyPull(null);
@@ -197,7 +200,7 @@ export function GachaClient() {
 
     const cards = payload.cards ?? [];
     const rewards = payload.rewards ?? [];
-    setVisibleCoins(typeof payload.coins === "number" ? payload.coins : displayCoins - count * necrpTuffGachaBanner.pricePerPull);
+    setVisibleCoins(typeof payload.coins === "number" ? payload.coins : displayCoins - count * activeBanner.pricePerPull);
     setPullCards(cards);
     setPullRewards(rewards);
     if (cards.length === 0) {
@@ -210,6 +213,19 @@ export function GachaClient() {
 
   return (
     <AuthGate>
+      {!banner ? (
+        <main className="grid min-h-[calc(100vh-76px)] place-items-center bg-slate-950 px-4 text-white">
+          <div className="max-w-md rounded-lg border border-white/10 bg-white/10 p-6 text-center shadow-2xl">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100">Gacha</p>
+            <h1 className="mt-2 text-3xl font-black">Banner not found</h1>
+            <p className="mt-2 text-sm font-bold text-slate-300">That constellation does not exist anymore.</p>
+            <Link href="/gacha" className="mt-5 inline-flex items-center gap-2 rounded-md bg-cyan-200 px-4 py-3 text-sm font-black text-slate-950 hover:bg-cyan-100">
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              Back to Gacha
+            </Link>
+          </div>
+        </main>
+      ) : (
       <main className="min-h-[calc(100vh-76px)] overflow-hidden bg-slate-950 text-white">
         <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <div className="gacha-starfield absolute inset-0 opacity-70" aria-hidden />
@@ -220,7 +236,7 @@ export function GachaClient() {
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100">Featured</p>
-                    <h1 className="text-2xl font-black">{status?.banner.name ?? "Constellation"}</h1>
+                    <h1 className="text-2xl font-black">{activeBanner?.name ?? "Constellation"}</h1>
                   </div>
                   <span className="rounded-full border border-cyan-200/50 bg-cyan-100 px-3 py-1 text-xs font-black text-cyan-950">DIVINE</span>
                 </div>
@@ -238,9 +254,9 @@ export function GachaClient() {
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100">Constellation Reward</p>
-                      <h2 className="mt-1 text-3xl font-black">necrp (tuff edition)</h2>
+                      <h2 className="mt-1 text-3xl font-black">{status?.featuredCard.name ?? activeBanner?.featuredLabel}</h2>
                       <p className="mt-2 max-w-2xl text-sm font-bold text-slate-300">
-                        Pulls cost 100 coins. Featured pity resets whenever the DIVINE card appears.
+                        {activeBanner?.subtitle} Pulls cost {activeBanner?.pricePerPull} coins. Featured pity resets whenever the DIVINE card appears.
                       </p>
                     </div>
                     <span className="inline-flex items-center gap-2 rounded-md border border-amber-200/40 bg-amber-200/15 px-3 py-2 text-sm font-black text-amber-100">
@@ -251,8 +267,8 @@ export function GachaClient() {
 
                   <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/80 p-4">
                     <div className="flex items-center justify-between gap-3 text-sm font-black">
-                      <span>Pity {displayPity?.pullsSinceFeatured ?? 0} / {necrpTuffGachaBanner.hardPity}</span>
-                      <span>Guaranteed in {displayPity?.guaranteedIn ?? necrpTuffGachaBanner.hardPity}</span>
+                      <span>Pity {displayPity?.pullsSinceFeatured ?? 0} / {activeBanner?.hardPity}</span>
+                      <span>Guaranteed in {displayPity?.guaranteedIn ?? activeBanner?.hardPity}</span>
                     </div>
                     <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10">
                       <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-white to-amber-200 transition-all" style={{ width: `${pityPercent}%` }} />
@@ -273,7 +289,7 @@ export function GachaClient() {
                     >
                       {busyPull === 1 ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Star className="h-4 w-4" aria-hidden />}
                       Pull 1
-                      <span className="rounded bg-black/10 px-2 py-0.5">100</span>
+                      <span className="rounded bg-black/10 px-2 py-0.5">{activeBanner?.pricePerPull}</span>
                     </button>
                     <button
                       type="button"
@@ -283,7 +299,7 @@ export function GachaClient() {
                     >
                       {busyPull === 10 ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Zap className="h-4 w-4" aria-hidden />}
                       Pull 10
-                      <span className="rounded bg-black/10 px-2 py-0.5">1000</span>
+                      <span className="rounded bg-black/10 px-2 py-0.5">{(activeBanner?.pricePerPull ?? 0) * 10}</span>
                     </button>
                   </div>
                   {message ? <div className="mt-4 rounded-md border border-rose-300/40 bg-rose-500/15 p-3 text-sm font-black text-rose-100">{message}</div> : null}
@@ -408,6 +424,7 @@ export function GachaClient() {
           </div>
         </div>
       </main>
+      )}
     </AuthGate>
   );
 }
