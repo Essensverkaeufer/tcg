@@ -6,6 +6,7 @@ const MAX_BOARD_SIZE = 30;
 const MAX_ENERGY = 10;
 const STARTING_ENERGY = 3;
 const ENERGY_GAIN_PER_TURN = 2;
+export const ATTACK_ENERGY_COST = 1;
 
 export function getCardCost(card: CardTemplate) {
   return Math.max(1, Math.min(MAX_ENERGY, Math.ceil((card.attack + card.health + card.size + card.aura) / 6)));
@@ -85,6 +86,7 @@ export function validateAction(state: MatchState, action: MatchAction): Validati
     const player = getPlayer(state, action.playerId);
     const attacker = player.board.find((entry) => entry.instanceId === action.attackerInstanceId);
     if (!attacker) return { ok: false, reason: "Attacker is not on the board." };
+    if (player.energyCurrent < ATTACK_ENERGY_COST) return { ok: false, reason: `Not enough energy. Needs ${ATTACK_ENERGY_COST}.` };
     if (attacker.template.cardType === "BUILDING") return { ok: false, reason: "Buildings cannot attack by default." };
     if (attacker.exhausted) return { ok: false, reason: "Card is exhausted." };
     if (attacker.enteredTurn === state.turn) return { ok: false, reason: "Cards cannot attack on the turn they are played." };
@@ -229,6 +231,7 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
     );
     if (!target) throw new Error("Invalid attack target.");
 
+    player.energyCurrent -= ATTACK_ENERGY_COST;
     attacker.exhausted = true;
     messages.push(`${attacker.template.name} attacked ${target.template.name}.`);
     messages.push(...dealDamage(target, attacker.currentAttack, attacker.template.name));

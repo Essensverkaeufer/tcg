@@ -22,6 +22,7 @@ const blankCard: CardTemplate = {
   size: 0,
   aura: 0,
   imageUrl: "",
+  soundEffectUrl: "",
   abilityData: [],
 };
 
@@ -147,6 +148,7 @@ export function AdminCardsClient() {
             <textarea className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
             <textarea className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Flavor text" value={form.flavorText} onChange={(event) => setForm({ ...form, flavorText: event.target.value })} />
             <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Image URL" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
+            <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Sound Effect URL" value={form.soundEffectUrl ?? ""} onChange={(event) => setForm({ ...form, soundEffectUrl: event.target.value })} />
             <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" type="file" accept="image/*" onChange={(event) => event.target.files?.[0] && void uploadImage(event.target.files[0])} />
             <textarea className="md:col-span-2 min-h-40 rounded-md border border-slate-300 px-3 py-2 font-mono text-xs" value={abilityJson} onChange={(event) => setAbilityJson(event.target.value)} />
           </div>

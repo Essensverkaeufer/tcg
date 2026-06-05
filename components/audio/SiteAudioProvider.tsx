@@ -15,6 +15,7 @@ type SiteAudioContextValue = {
   volume: number;
   setMusicVolume: (nextVolume: number) => Promise<void>;
   skipMusic: () => Promise<void>;
+  playAbilitySound: (soundEffectUrl?: string | null) => void;
   playTurnCue: () => void;
   refreshMusic: () => Promise<void>;
 };
@@ -184,6 +185,13 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const playAbilitySound = useCallback((soundEffectUrl?: string | null) => {
+    if (!soundEffectUrl || volumeRef.current <= 0) return;
+    const audio = new Audio(soundEffectUrl);
+    audio.volume = volumeRef.current;
+    void audio.play().catch(() => undefined);
+  }, []);
+
   const value = useMemo<SiteAudioContextValue>(() => ({
     musicEnabled: volume > 0,
     isPlaying,
@@ -192,9 +200,10 @@ export function SiteAudioProvider({ children }: { children: React.ReactNode }) {
     volume,
     setMusicVolume,
     skipMusic,
+    playAbilitySound,
     playTurnCue,
     refreshMusic,
-  }), [currentTrack?.name, isPlaying, playTurnCue, refreshMusic, setMusicVolume, skipMusic, tracks.length, volume]);
+  }), [currentTrack?.name, isPlaying, playAbilitySound, playTurnCue, refreshMusic, setMusicVolume, skipMusic, tracks.length, volume]);
 
   return <SiteAudioContext.Provider value={value}>{children}</SiteAudioContext.Provider>;
 }

@@ -16,6 +16,7 @@ export function cardRowToTemplate(row: SupabaseCardRow): CardTemplate {
     size: row.size,
     aura: row.aura,
     imageUrl: row.image_url,
+    soundEffectUrl: row.sound_effect_url ?? "",
     abilityData: Array.isArray(row.ability_data) ? row.ability_data as CardTemplate["abilityData"] : [],
   };
 }
@@ -32,6 +33,7 @@ export function cardTemplateToInsert(card: CardTemplate): Database["public"]["Ta
     size: card.size,
     aura: card.aura,
     image_url: card.imageUrl,
+    sound_effect_url: card.soundEffectUrl ?? null,
     flavor_text: card.flavorText,
     ability_data: card.abilityData as Json,
     balance_version: "prototype-0.1",

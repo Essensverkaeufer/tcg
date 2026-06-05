@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createMatchState, applyAction, validateAction } from "@/lib/game/match/state";
+import { ATTACK_ENERGY_COST, createMatchState, applyAction, validateAction } from "@/lib/game/match/state";
 import { drawCards } from "@/lib/game/abilities/engine";
 import { createMatchView, isHiddenCard } from "@/lib/game/match/view";
 import type { CardTemplate } from "@/types/cards";
@@ -217,6 +217,7 @@ const playedCard = active.hand[0];
 state = applyAction(state, { type: "PLAY_CARD", playerId: active.playerId, cardInstanceId: playedCard.instanceId, actionSeq: 1 });
 assert.equal(state.players[0].hand.length, 4, "playing should remove one card from hand");
 assert.equal(state.players[0].board.length, 1, "playing should put one card on board");
+const energyBeforeAttack = state.players[0].energyCurrent;
 
 state.players[0].board[0].currentAttack = 99;
 state.players[0].board[0].enteredTurn = 0;
@@ -230,6 +231,7 @@ state = applyAction(state, {
 });
 assert.equal(state.phase, "FINISHED", "leader death should finish the match");
 assert.equal(state.winnerId, active.playerId, "attacker should win after killing enemy leader");
+assert.equal(state.players[0].energyCurrent, energyBeforeAttack - ATTACK_ENERGY_COST, "attacking should spend 1 energy");
 
 const capped = createMatchState(
   "cap",
@@ -256,6 +258,14 @@ protectedState.players[0].board.push(attacker);
 const wall = protectedState.players[1].hand.find((card) => card.template.slug === "wall")!;
 wall.zone = "BOARD";
 protectedState.players[1].board.push(wall);
+protectedState.players[0].energyCurrent = 0;
+assert.deepEqual(validateAction(protectedState, {
+  type: "ATTACK",
+  playerId: protectedState.players[0].playerId,
+  attackerInstanceId: attacker.instanceId,
+  targetInstanceId: wall.instanceId,
+}), { ok: false, reason: "Not enough energy. Needs 1." }, "attacking should be blocked at 0 energy");
+protectedState.players[0].energyCurrent = 1;
 assert.deepEqual(validateAction(protectedState, {
   type: "ATTACK",
   playerId: protectedState.players[0].playerId,

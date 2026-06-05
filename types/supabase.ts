@@ -48,10 +48,12 @@ export type Database = {
           size: number;
           aura: number;
           image_url: string;
+          sound_effect_url: string | null;
           flavor_text: string | null;
           ability_data: Json;
           balance_version: string;
           created_at: string;
+          category: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["card_templates"]["Row"]> & {
           slug: string;

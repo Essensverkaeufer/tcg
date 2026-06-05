@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CardFrame } from "@/components/cards/CardFrame";
+import { cardSortOptions, sortCardEntries, type CardSortKey, type SortDirection } from "@/lib/game/card-sorting";
 import { rarityValues } from "@/lib/game/rarities";
 import type { CardTemplate, CardType, Rarity } from "@/types/cards";
 
@@ -24,6 +25,8 @@ export function CollectionClient() {
   const [search, setSearch] = useState("");
   const [rarity, setRarity] = useState<Rarity | "ALL">("ALL");
   const [cardType, setCardType] = useState<CardType | "ALL">("ALL");
+  const [sortKey, setSortKey] = useState<CardSortKey>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     if (!user) return;
@@ -58,13 +61,14 @@ export function CollectionClient() {
   }, [accessToken, user]);
 
   const filtered = useMemo(() => {
-    return entries.filter((entry) => {
+    const matchingEntries = entries.filter((entry) => {
       const matchesSearch = entry.card.name.toLowerCase().includes(search.toLowerCase());
       const matchesRarity = rarity === "ALL" || entry.card.rarity === rarity;
       const matchesType = cardType === "ALL" || entry.card.cardType === cardType;
       return matchesSearch && matchesRarity && matchesType;
     });
-  }, [cardType, entries, rarity, search]);
+    return sortCardEntries(matchingEntries, sortKey, sortDirection);
+  }, [cardType, entries, rarity, search, sortDirection, sortKey]);
 
   return (
     <AuthGate>
@@ -76,13 +80,28 @@ export function CollectionClient() {
           </div>
           <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold">{entries.length} owned templates</div>
         </div>
-        <div className="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-3">
+        <div className="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-5">
           <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Search cards" value={search} onChange={(event) => setSearch(event.target.value)} />
           <select className="rounded-md border border-slate-300 px-3 py-2" value={rarity} onChange={(event) => setRarity(event.target.value as Rarity | "ALL")}>
             {rarityOptions.map((option) => <option key={option}>{option}</option>)}
           </select>
           <select className="rounded-md border border-slate-300 px-3 py-2" value={cardType} onChange={(event) => setCardType(event.target.value as CardType | "ALL")}>
             {typeOptions.map((option) => <option key={option}>{option}</option>)}
+          </select>
+          <select
+            className="rounded-md border border-slate-300 px-3 py-2"
+            value={sortKey}
+            onChange={(event) => {
+              const nextSort = event.target.value as CardSortKey;
+              setSortKey(nextSort);
+              setSortDirection(nextSort === "name" ? "asc" : "desc");
+            }}
+          >
+            {cardSortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <select className="rounded-md border border-slate-300 px-3 py-2" value={sortDirection} onChange={(event) => setSortDirection(event.target.value as SortDirection)}>
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
           </select>
         </div>
         {error ? (

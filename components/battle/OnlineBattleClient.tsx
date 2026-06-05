@@ -10,7 +10,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { isHiddenCard, type HiddenCard, type MatchView } from "@/lib/game/match/view";
-import { getCardCost } from "@/lib/game/match/state";
+import { ATTACK_ENERGY_COST, getCardCost } from "@/lib/game/match/state";
+import { resolveSoundEffectUrl } from "@/lib/game/sound-effects";
 import type { AbilityDefinition } from "@/types/cards";
 import type { CardInstance, MatchAction } from "@/types/match";
 
@@ -19,11 +20,12 @@ type TargetMode = "inspect" | "attack" | "ability" | "item";
 
 export function OnlineBattleClient() {
   const { accessToken, user } = useAuth();
-  const { playTurnCue } = useSiteAudio();
+  const { playAbilitySound, playTurnCue } = useSiteAudio();
   const configuredRealtimeUrl = process.env.NEXT_PUBLIC_REALTIME_URL ?? "";
   const realtimeUrl = configuredRealtimeUrl || (process.env.NODE_ENV === "development" ? "http://localhost:3001" : "");
   const socketRef = useRef<Socket | null>(null);
   const previousActivePlayerRef = useRef<string | null>(null);
+  const lastAbilityEventId = useRef<string | null>(null);
   const [status, setStatus] = useState<SocketStatus>(realtimeUrl ? "idle" : "error");
   const [message, setMessage] = useState(
     realtimeUrl
@@ -96,6 +98,15 @@ export function OnlineBattleClient() {
     previousActivePlayerRef.current = view.activePlayerId;
   }, [playTurnCue, view]);
 
+  useEffect(() => {
+    const event = view?.lastEvent;
+    if (!view || !event || event.type !== "ABILITY" || lastAbilityEventId.current === event.id) return;
+    const source = event.sourceInstanceId ? findVisibleCard(view, event.sourceInstanceId) : undefined;
+    const soundUrl = resolveSoundEffectUrl(source?.template.soundEffectUrl);
+    if (soundUrl) playAbilitySound(soundUrl);
+    lastAbilityEventId.current = event.id;
+  }, [playAbilitySound, view]);
+
   const selected = useMemo(() => view && selectedId ? findVisibleCard(view, selectedId) : undefined, [selectedId, view]);
   const activePlayer = view?.players.find((player) => player.playerId === view.activePlayerId);
   const you = view?.players.find((player) => player.playerId === view.you);
@@ -105,6 +116,21 @@ export function OnlineBattleClient() {
   const selectedIsYours = Boolean(selected && selected.ownerId === view?.you);
   const selectedInHand = Boolean(you?.hand.some((card) => !isHiddenCard(card) && card.instanceId === selectedId));
   const selectedOnBoard = Boolean(you && selected && [you.leader, ...you.board].some((card) => card.instanceId === selected.instanceId));
+  const selectedCanAttack = Boolean(
+    view
+    && you
+    && selected
+    && selectedIsYours
+    && isYourTurn
+    && you.board.some((card) => card.instanceId === selected.instanceId)
+    && selected.template.cardType !== "BUILDING"
+    && !selected.exhausted
+    && selected.enteredTurn !== view.turn
+    && (selected.stunnedUntilTurn ?? 0) < view.turn
+    && (selected.blindedUntilTurn ?? 0) < view.turn
+    && you.energyCurrent >= ATTACK_ENERGY_COST
+    && view.phase !== "FINISHED",
+  );
   const activatedAbilities = selected?.template.abilityData.filter((ability) => ability.trigger === "ACTIVATED") ?? [];
 
   function joinQueue() {
@@ -165,7 +191,7 @@ export function OnlineBattleClient() {
   }
 
   function beginAttack() {
-    if (!selected || !selectedOnBoard || !isYourTurn) return;
+    if (!selectedCanAttack) return;
     setTargetMode("attack");
     setPendingAbilityId("");
     setMessage("Choose an enemy card or leader to attack.");
@@ -226,7 +252,7 @@ export function OnlineBattleClient() {
               <button type="button" onClick={playSelected} disabled={!isYourTurn || !selectedInHand || !selectedIsYours} className="rounded-md bg-amber-300 px-3 py-2 text-sm font-black text-slate-950 disabled:opacity-40">
                 Play{selectedInHand && selected ? ` (${getCardCost(selected.template)}E)` : ""}
               </button>
-              <button type="button" onClick={beginAttack} disabled={!isYourTurn || !selectedOnBoard || !selectedIsYours} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black disabled:opacity-40">Attack</button>
+              <button type="button" onClick={beginAttack} disabled={!selectedCanAttack} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black disabled:opacity-40">Attack ({ATTACK_ENERGY_COST}E)</button>
               {activatedAbilities.length ? activatedAbilities.map((ability) => {
                 const cooldownRemaining = selected && view ? getAbilityCooldownRemaining(selected, ability.id, selectedOwner?.turnsStarted ?? 0) : 0;
                 return (

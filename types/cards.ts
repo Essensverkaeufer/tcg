@@ -94,5 +94,6 @@ export type CardTemplate = {
   size: number;
   aura: number;
   imageUrl: string;
+  soundEffectUrl?: string;
   abilityData: AbilityDefinition[];
 };

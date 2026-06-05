@@ -10,8 +10,9 @@ import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { cardCatalog } from "@/lib/game/cards";
 import { validateDeck } from "@/lib/game/decks/validateDeck";
 import { cardRowToTemplate } from "@/lib/game/mapping";
-import { applyAction, createMatchState, getCardCost, getUsedBoardSize, validateAction } from "@/lib/game/match/state";
+import { applyAction, ATTACK_ENERGY_COST, createMatchState, getCardCost, getUsedBoardSize, validateAction } from "@/lib/game/match/state";
 import { getRarityTheme } from "@/lib/game/rarities";
+import { resolveSoundEffectUrl } from "@/lib/game/sound-effects";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { AbilityDefinition, CardTemplate } from "@/types/cards";
 import type { CardInstance, MatchPlayerState, MatchState } from "@/types/match";
@@ -67,8 +68,9 @@ function isValidBattleDeck(deck?: CardTemplate[]) {
 export function BattleBoard() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const { user } = useAuth();
-  const { playTurnCue } = useSiteAudio();
+  const { playAbilitySound, playTurnCue } = useSiteAudio();
   const lastTurnEventId = useRef<string | null>(null);
+  const lastAbilityEventId = useRef<string | null>(null);
   const [state, setState] = useState<MatchState | null>(() => buildMatch());
   const [selectedId, setSelectedId] = useState("");
   const [mode, setMode] = useState<BattleMode>("inspect");
@@ -86,6 +88,15 @@ export function BattleBoard() {
     }
     lastTurnEventId.current = event.id;
   }, [playTurnCue, state?.lastEvent]);
+
+  useEffect(() => {
+    const event = state?.lastEvent;
+    if (!state || !event || event.type !== "ABILITY" || lastAbilityEventId.current === event.id) return;
+    const source = event.sourceInstanceId ? findInstance(state, event.sourceInstanceId) : undefined;
+    const soundUrl = resolveSoundEffectUrl(source?.template.soundEffectUrl);
+    if (soundUrl) playAbilitySound(soundUrl);
+    lastAbilityEventId.current = event.id;
+  }, [playAbilitySound, state, state?.lastEvent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -476,7 +487,7 @@ function ControlPanel({
           <button type="button" onClick={onPlay} disabled={!selectedCanPlay || state.phase === "FINISHED"} className="rounded-md bg-amber-300 px-3 py-2 text-sm font-black text-slate-950 disabled:opacity-40">
             {selected?.template.cardType === "ITEM" ? "Equip Item" : "Play"}{selectedInHand && selected ? ` (${getCardCost(selected.template)}E)` : ""}
           </button>
-          <button type="button" onClick={onAttack} disabled={!selectedCanAttack || state.phase === "FINISHED"} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black text-white disabled:opacity-40">Attack</button>
+          <button type="button" onClick={onAttack} disabled={!selectedCanAttack || state.phase === "FINISHED"} className="rounded-md bg-rose-500 px-3 py-2 text-sm font-black text-white disabled:opacity-40">Attack ({ATTACK_ENERGY_COST}E)</button>
           {activatedAbilities.length ? activatedAbilities.map((ability) => {
             const selectedOwner = selected ? state.players.find((player) => player.playerId === selected.ownerId) : undefined;
             const cooldownRemaining = selected ? getAbilityCooldownRemaining(selected, ability.id, selectedOwner?.turnsStarted ?? 0) : 0;

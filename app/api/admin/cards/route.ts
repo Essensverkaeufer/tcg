@@ -16,6 +16,7 @@ const cardSchema = z.object({
   size: z.number().int().min(0),
   aura: z.number().int().min(0),
   imageUrl: z.string().default(""),
+  soundEffectUrl: z.string().default(""),
   flavorText: z.string().default(""),
   abilityData: z.array(z.unknown()).default([]),
 });
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
       size: card.size,
       aura: card.aura,
       image_url: card.imageUrl,
+      sound_effect_url: card.soundEffectUrl || null,
       flavor_text: card.flavorText,
       ability_data: card.abilityData as Json,
       balance_version: "prototype-0.1",
