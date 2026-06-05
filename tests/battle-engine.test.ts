@@ -244,6 +244,60 @@ assert.equal(cappedPlayer.hand.length, 5, "opening hand should stay at 5");
 assert.equal(drawCards(cappedPlayer, 1), 0, "drawing at 5 cards should draw nothing");
 assert.equal(cappedPlayer.hand.length, 5, "hand should stay capped at 5");
 
+const loopPlayer = structuredClone(capped.players[1]);
+const loopCard = loopPlayer.deck[0];
+loopPlayer.hand = loopPlayer.hand.slice(0, 1);
+loopPlayer.deck = [];
+loopPlayer.graveyard = [{
+  ...loopCard,
+  zone: "GRAVEYARD",
+  currentHealth: 0,
+  exhausted: true,
+  poisoned: true,
+  stunnedUntilTurn: 99,
+}];
+assert.equal(drawCards(loopPlayer, 1), 1, "empty decks should recycle the graveyard before drawing");
+assert.equal(loopPlayer.graveyard.length, 0, "recycled graveyard should be emptied");
+assert.equal(loopPlayer.hand.length, 2, "recycled card should be drawn into hand");
+const recycledHandCard = loopPlayer.hand[1];
+assert.equal(recycledHandCard.zone, "HAND", "recycled card should enter hand");
+assert.equal(recycledHandCard.currentHealth, recycledHandCard.template.health, "recycled cards should reset health");
+assert.equal(recycledHandCard.exhausted, false, "recycled cards should clear exhausted state");
+assert.equal(recycledHandCard.poisoned, undefined, "recycled cards should clear status effects");
+assert.equal(recycledHandCard.stunnedUntilTurn, undefined, "recycled cards should clear timed effects");
+
+let deckLoopState = createMatchState(
+  "deck-loop",
+  { id: "a", name: "A", deck: deck("a-loop") },
+  { id: "b", name: "B", deck: deck("b-loop") },
+  { seed: "deck-loop-seed", deterministic: true },
+);
+const loopDrawCard = deckLoopState.players[1].deck[0];
+deckLoopState.players[1].hand = deckLoopState.players[1].hand.slice(0, 1);
+deckLoopState.players[1].deck = [];
+deckLoopState.players[1].graveyard = [{ ...loopDrawCard, zone: "GRAVEYARD", currentHealth: 0 }];
+deckLoopState = applyAction(deckLoopState, { type: "END_TURN", playerId: "a" });
+assert.equal(deckLoopState.phase, "MAIN", "drawing from an empty deck should no longer end the match");
+assert.equal(deckLoopState.activePlayerId, "b", "turn should still pass after looping the graveyard");
+assert.equal(deckLoopState.players[1].hand.length, 2, "turn draw should use the recycled graveyard card");
+assert.equal(deckLoopState.messages.includes("B's graveyard looped back into the deck."), true, "turn log should explain the recycle");
+assert.equal(deckLoopState.messages.includes("B drew a card."), true, "turn log should still report the draw");
+
+let noCardsState = createMatchState(
+  "no-cards-left",
+  { id: "a", name: "A", deck: deck("a-no-cards") },
+  { id: "b", name: "B", deck: deck("b-no-cards") },
+  { seed: "no-cards-left-seed", deterministic: true },
+);
+noCardsState.players[1].hand = noCardsState.players[1].hand.slice(0, 1);
+noCardsState.players[1].deck = [];
+noCardsState.players[1].graveyard = [];
+noCardsState = applyAction(noCardsState, { type: "END_TURN", playerId: "a" });
+assert.equal(noCardsState.phase, "MAIN", "drawing with no deck and no graveyard should not end the match");
+assert.equal(noCardsState.activePlayerId, "b", "turn should still pass when no cards are available to draw");
+assert.equal(noCardsState.messages.includes("B had no cards to draw."), true, "turn log should explain the skipped draw");
+assert.equal(noCardsState.messages.some((message) => message.includes("hit 0 HP")), false, "empty draw should not create a fake leader-death message");
+
 const protectedState = createMatchState(
   "building-protect",
   { id: "a", name: "A", deck: [leader, unit("attacker", 3, 3), ...Array.from({ length: 9 }, (_, index) => unit(`a-extra-${index}`))] },

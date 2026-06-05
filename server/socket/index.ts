@@ -246,10 +246,11 @@ async function handleAction(io: Server, socket: Socket, payload: { matchId?: str
   } as MatchAction;
 
   try {
+    const beforeState = structuredClone(match.state);
     const nextState = applyAction(match.state, action);
     match.state = nextState;
     match.lastActionSeq[userId] = incomingSeq;
-    await persistAction(match, userId, action);
+    await persistAction(match, userId, action, beforeState);
     await persistState(match);
     broadcastMatch(io, match);
 
@@ -445,17 +446,24 @@ async function markTicketsMatched(match: ActiveMatch) {
   }
 }
 
-async function persistAction(match: ActiveMatch, userId: string, action: MatchAction) {
-  const stateHash = hashState(match.state);
+async function persistAction(match: ActiveMatch, userId: string, action: MatchAction, beforeState: MatchState) {
+  const beforeHash = hashState(beforeState);
+  const afterHash = hashState(match.state);
   await supabase.from("match_action_logs").insert({
     match_id: match.id,
     user_id: userId,
     action: action.type,
-    payload: action as unknown as Json,
+    payload: {
+      ...action,
+      debug: {
+        before: summarizeMatchStateForDebug(beforeState),
+        after: summarizeMatchStateForDebug(match.state),
+      },
+    } as unknown as Json,
     action_seq: action.actionSeq ?? null,
     client_action_id: action.clientActionId ?? null,
-    state_hash: stateHash,
-    resolved_state_hash: stateHash,
+    state_hash: beforeHash,
+    resolved_state_hash: afterHash,
   });
 }
 
@@ -488,6 +496,38 @@ function readToken(socket: Socket) {
 
 function hashState(state: MatchState) {
   return createHash("sha256").update(JSON.stringify(state)).digest("hex");
+}
+
+function summarizeMatchStateForDebug(state: MatchState) {
+  return {
+    phase: state.phase,
+    turn: state.turn,
+    activePlayerId: state.activePlayerId,
+    winnerId: state.winnerId ?? null,
+    draw: state.draw ?? false,
+    lastEvent: state.lastEvent?.message ?? null,
+    messages: state.messages.slice(0, 5),
+    players: state.players.map((player) => ({
+      playerId: player.playerId,
+      displayName: player.displayName,
+      deck: player.deck.length,
+      hand: player.hand.length,
+      board: player.board.length,
+      graveyard: player.graveyard.length,
+      energy: `${player.energyCurrent}/${player.energyMax}`,
+      leader: {
+        slug: player.leader.template.slug,
+        hp: `${player.leader.currentHealth}/${player.leader.currentMaxHealth}`,
+      },
+      boardCards: player.board.map((card) => ({
+        slug: card.template.slug,
+        type: card.template.cardType,
+        hp: `${card.currentHealth}/${card.currentMaxHealth}`,
+        attack: card.currentAttack,
+        exhausted: card.exhausted,
+      })),
+    })),
+  };
 }
 
 function loadLocalEnv() {

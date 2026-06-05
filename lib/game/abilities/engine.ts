@@ -235,12 +235,45 @@ export function drawCards(player: MatchPlayerState, amount = 1) {
   let drawn = 0;
   for (let index = 0; index < amount; index += 1) {
     if (player.hand.length >= MAX_HAND_SIZE) return drawn;
+    if (player.deck.length === 0) {
+      recycleGraveyardIntoDeck(player);
+    }
     const card = player.deck.shift();
     if (!card) return drawn;
     player.hand.push({ ...card, zone: "HAND" });
     drawn += 1;
   }
   return drawn;
+}
+
+function recycleGraveyardIntoDeck(player: MatchPlayerState) {
+  if (player.graveyard.length === 0) return;
+  const recycled = player.graveyard.splice(0).map((card) => resetCardForDeck(card));
+  player.deck.push(...recycled);
+}
+
+function resetCardForDeck(card: CardInstance): CardInstance {
+  const maxHealth = card.template.cardType === "LEADER" ? card.template.health * 5 : card.template.health;
+
+  return {
+    ...card,
+    zone: "DECK",
+    currentAttack: card.template.attack,
+    currentHealth: maxHealth,
+    currentMaxHealth: maxHealth,
+    currentSize: card.template.size,
+    currentAura: card.template.aura,
+    exhausted: false,
+    shielded: false,
+    activatedThisTurn: [],
+    abilityCooldowns: {},
+    attachedItems: [],
+    blindedUntilTurn: undefined,
+    stunnedUntilTurn: undefined,
+    poisoned: undefined,
+    burnedUntilTurn: undefined,
+    enteredTurn: 0,
+  };
 }
 
 export function getAbilityCooldownRemaining(card: CardInstance, abilityId: string, ownerTurnsStarted: number) {

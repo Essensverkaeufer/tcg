@@ -152,11 +152,13 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
     } else if (opponent.hand.length >= MAX_HAND_SIZE) {
       messages.push(`${opponent.displayName} already has ${MAX_HAND_SIZE} cards and did not draw.`);
     } else {
+      const recycledBeforeDraw = opponent.deck.length === 0 && opponent.graveyard.length > 0;
       const drawn = drawCards(opponent, 1);
+      if (recycledBeforeDraw) {
+        messages.push(`${opponent.displayName}'s graveyard looped back into the deck.`);
+      }
       if (drawn === 0) {
-        nextState.phase = "FINISHED";
-        nextState.winnerId = current.playerId;
-        messages.push(`${opponent.displayName} could not draw and lost.`);
+        messages.push(`${opponent.displayName} had no cards to draw.`);
       } else {
         messages.push(`${opponent.displayName} drew a card.`);
       }
