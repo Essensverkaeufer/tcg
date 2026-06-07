@@ -57,11 +57,15 @@ export function StoryMapClient() {
             </Link>
           </div>
 
-          <div className="relative mt-8 min-h-[560px] overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,#451a35_0%,#111827_48%,#020617_100%)] p-4 shadow-2xl shadow-rose-950/30">
-            <div className="absolute inset-x-10 top-1/2 h-1 -translate-y-1/2 rounded-full bg-gradient-to-r from-emerald-400/30 via-amber-300/50 to-rose-500/50" />
-            {encounters.map((encounter) => (
-              <EncounterNode key={encounter.slug} encounter={encounter} />
-            ))}
+          <div className="mt-8 overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,#451a35_0%,#111827_48%,#020617_100%)] p-4 shadow-2xl shadow-rose-950/30 sm:p-6">
+            <div className="relative">
+              <div className="absolute bottom-8 left-8 top-8 w-1 rounded-full bg-gradient-to-b from-emerald-400/30 via-amber-300/50 to-rose-500/50 md:left-8 md:right-8 md:top-1/2 md:h-1 md:w-auto md:-translate-y-1/2 md:bg-gradient-to-r" />
+              <div className="relative grid gap-4 md:grid-cols-3 xl:grid-cols-6 xl:gap-5">
+                {encounters.map((encounter, index) => (
+                  <EncounterNode key={encounter.slug} encounter={encounter} index={index} />
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       </main>
@@ -69,7 +73,7 @@ export function StoryMapClient() {
   );
 }
 
-function EncounterNode({ encounter }: { encounter: StoryProgressEncounter }) {
+function EncounterNode({ encounter, index }: { encounter: StoryProgressEncounter; index: number }) {
   const locked = encounter.status === "LOCKED";
   const completed = encounter.status === "COMPLETED";
   const Icon = encounter.boss ? Skull : completed ? Check : locked ? Lock : Swords;
@@ -77,7 +81,7 @@ function EncounterNode({ encounter }: { encounter: StoryProgressEncounter }) {
   const content = (
     <article
       className={clsx(
-        "w-52 rounded-lg border p-3 shadow-xl backdrop-blur",
+        "w-full min-w-0 rounded-lg border p-3 shadow-xl backdrop-blur",
         encounter.boss ? "border-rose-400 bg-rose-950/70 shadow-rose-500/20" : completed ? "border-emerald-300/50 bg-emerald-950/50" : locked ? "border-white/10 bg-black/60 opacity-70" : "border-amber-300/60 bg-slate-950/85 shadow-amber-500/20",
       )}
     >
@@ -103,8 +107,14 @@ function EncounterNode({ encounter }: { encounter: StoryProgressEncounter }) {
   );
 
   return (
-    <div className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${encounter.position.x}%`, top: `${encounter.position.y}%` }}>
-      {locked ? content : <Link href={`/story/${encounter.slug}`}>{content}</Link>}
+    <div className={clsx(
+      "relative z-10 flex min-w-0 items-center gap-3 md:block",
+      index % 2 === 0 ? "xl:-translate-y-10" : "xl:translate-y-12",
+    )}>
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/10 bg-slate-950 shadow-lg md:mx-auto md:mb-3">
+        <Icon className="h-5 w-5" aria-hidden />
+      </div>
+      {locked ? content : <Link href={`/story/${encounter.slug}`} className="min-w-0 flex-1 md:block">{content}</Link>}
       {encounter.boss ? <Castle className="mx-auto mt-2 h-8 w-8 text-rose-200" aria-hidden /> : null}
     </div>
   );

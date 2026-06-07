@@ -104,5 +104,6 @@ export type CardTemplate = {
   category?: string;
   imageUrl: string;
   soundEffectUrl?: string;
+  dropEnabled?: boolean;
   abilityData: AbilityDefinition[];
 };

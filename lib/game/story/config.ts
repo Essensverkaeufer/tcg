@@ -11,6 +11,7 @@ export type StoryEncounter = {
   position: { x: number; y: number };
   requiredPreviousSlug?: string;
   enemyDeck: string[];
+  rewardSlug?: string;
   boss?: boolean;
 };
 
@@ -71,8 +72,9 @@ export const storyEncounters: StoryEncounter[] = [
     difficulty: "NORMAL",
     requiredPreviousSlug: "tutorial-garrett-current",
     position: { x: 25, y: 40 },
+    rewardSlug: "gay-little-puppygirl-story-reward",
     enemyDeck: [
-      "garrett-prime",
+      "gay-little-puppygirl-story-leader",
       "rowletforsenator",
       "rowletforsenator",
       "white-monster",
@@ -91,8 +93,10 @@ export const storyEncounters: StoryEncounter[] = [
     difficulty: "NORMAL",
     requiredPreviousSlug: "rowlet-study-session",
     position: { x: 43, y: 68 },
+    rewardSlug: "buurazu-story-reward",
     enemyDeck: [
-      "garrett-prime",
+      "buurazu-story-leader",
+      "buurazu",
       "jpj",
       "jpjs-basement",
       "jpjs-basement",
@@ -111,8 +115,10 @@ export const storyEncounters: StoryEncounter[] = [
     difficulty: "HARD",
     requiredPreviousSlug: "jpj-basement-trap",
     position: { x: 61, y: 44 },
+    rewardSlug: "anarchy-story-reward",
     enemyDeck: [
-      "necrp-tuff-edition",
+      "anarchy-story-leader",
+      "anarchy",
       "necrp",
       "necrps-drunken-dad",
       "pillow-necrp",
@@ -131,8 +137,10 @@ export const storyEncounters: StoryEncounter[] = [
     difficulty: "HARD",
     requiredPreviousSlug: "necrp-tuff-wall",
     position: { x: 76, y: 66 },
+    rewardSlug: "pacmanpowerghost-corrupted-story-reward",
     enemyDeck: [
-      "necrp-tuff-edition",
+      "pacmanpowerghost-corrupted-story-leader",
+      "pacmanpowerghost",
       "pillow-necrp",
       "pillow-necrp",
       "necrp",

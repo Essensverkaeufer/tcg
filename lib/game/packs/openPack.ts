@@ -15,7 +15,9 @@ const defaultRarityWeights: Record<Rarity, number> = {
 };
 
 export function openPack(cardPool: CardTemplate[], cardCount = 5, rarityWeights = defaultRarityWeights): PackOpeningResult {
-  if (cardPool.length === 0) {
+  const eligibleCardPool = cardPool.filter((card) => card.dropEnabled !== false);
+
+  if (eligibleCardPool.length === 0) {
     return {
       cards: [],
     };
@@ -25,7 +27,7 @@ export function openPack(cardPool: CardTemplate[], cardCount = 5, rarityWeights 
 
   for (let slot = 0; slot < cardCount; slot += 1) {
     const rarity = rollRarity(rarityWeights);
-    cards.push(randomCardOfRarity(cardPool, rarity) ?? randomCardOfRarity(cardPool, "COMMON") ?? cardPool[0]);
+    cards.push(randomCardOfRarity(eligibleCardPool, rarity) ?? randomCardOfRarity(eligibleCardPool, "COMMON") ?? eligibleCardPool[0]);
   }
 
   return {

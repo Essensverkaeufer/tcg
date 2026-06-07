@@ -49,6 +49,7 @@ export type Database = {
           aura: number;
           image_url: string;
           sound_effect_url: string | null;
+          drop_enabled: boolean;
           flavor_text: string | null;
           ability_data: Json;
           balance_version: string;

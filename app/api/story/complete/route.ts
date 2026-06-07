@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { cardRowToTemplate } from "@/lib/game/mapping";
 import { getStoryEncounter } from "@/lib/game/story/config";
 import { isStoryTesterUsername } from "@/lib/game/story/testing";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
@@ -83,5 +84,66 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: saved.error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ progress: saved.data });
+  let reward = null;
+
+  if (won && encounter.rewardSlug) {
+    const rewardCard = await auth.supabase
+      .from("card_templates")
+      .select("*")
+      .eq("slug", encounter.rewardSlug)
+      .maybeSingle();
+
+    if (rewardCard.error) {
+      return NextResponse.json({ error: rewardCard.error.message }, { status: 500 });
+    }
+
+    if (!rewardCard.data) {
+      return NextResponse.json({ error: "Story reward card is not installed yet." }, { status: 500 });
+    }
+
+    const existing = await auth.supabase
+      .from("user_card_collection")
+      .select("quantity")
+      .eq("user_id", auth.user.id)
+      .eq("card_template_id", rewardCard.data.id)
+      .maybeSingle();
+
+    if (existing.error) {
+      return NextResponse.json({ error: existing.error.message }, { status: 500 });
+    }
+
+    if (existing.data) {
+      const incremented = await auth.supabase
+        .from("user_card_collection")
+        .update({ quantity: existing.data.quantity + 1 })
+        .eq("user_id", auth.user.id)
+        .eq("card_template_id", rewardCard.data.id)
+        .select("quantity")
+        .single();
+
+      if (incremented.error) {
+        return NextResponse.json({ error: incremented.error.message }, { status: 500 });
+      }
+
+      reward = { card: cardRowToTemplate(rewardCard.data), quantity: incremented.data.quantity };
+    } else {
+      const inserted = await auth.supabase
+        .from("user_card_collection")
+        .insert({
+          user_id: auth.user.id,
+          card_template_id: rewardCard.data.id,
+          quantity: 1,
+        })
+        .select("quantity")
+        .single();
+
+      if (inserted.error) {
+        return NextResponse.json({ error: inserted.error.message }, { status: 500 });
+      }
+
+      reward = { card: cardRowToTemplate(rewardCard.data), quantity: inserted.data.quantity };
+    }
+  }
+
+  return NextResponse.json({ progress: saved.data, reward });
 }

@@ -29,6 +29,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
   const [message, setMessage] = useState("Loading story battle...");
   const [blocked, setBlocked] = useState("");
   const [completionSaved, setCompletionSaved] = useState(false);
+  const [completionReward, setCompletionReward] = useState<{ card: CardTemplate; quantity: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +79,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
       setTargetMode("inspect");
       setPendingAbilityId("");
       setCompletionSaved(false);
+      setCompletionReward(null);
       reportedMatchId.current = "";
     })();
 
@@ -125,7 +127,11 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ encounterSlug: encounter.slug, result, turns: state.turn }),
       });
+      const payload = await response.json().catch(() => ({}));
       setCompletionSaved(response.ok);
+      if (response.ok && payload.reward) {
+        setCompletionReward(payload.reward);
+      }
     })();
   }, [encounter, state]);
 
@@ -325,6 +331,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
               {state.phase === "FINISHED" ? (
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   <span className="rounded-md bg-white/10 px-3 py-2 text-xs font-black">{completionSaved ? "Progress saved" : "Saving progress..."}</span>
+                  {completionReward ? <span className="rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-slate-950">Reward: {completionReward.card.name} x{completionReward.quantity}</span> : null}
                   {playerWon && nextEncounter ? <Link href={`/story/${nextEncounter.slug}`} className="rounded-md bg-emerald-400 px-3 py-2 text-xs font-black text-slate-950">Next Encounter</Link> : null}
                   <button type="button" onClick={restart} className="rounded-md border border-white/20 px-3 py-2 text-xs font-black">Retry</button>
                 </div>

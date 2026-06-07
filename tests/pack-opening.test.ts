@@ -47,4 +47,24 @@ const forcedRare = openPack([commonLeader, rareLeader], 1, {
 
 assert.equal(forcedRare.cards[0].slug, "rare-leader", "rarity rolls should be able to choose a leader of that rarity");
 
+const storyOnlyRare = {
+  ...rareLeader,
+  slug: "story-only-rare",
+  dropEnabled: false,
+};
+const forcedRareWithStoryCard = openPack([commonLeader, storyOnlyRare], 5, {
+  COMMON: 0,
+  RARE: 1,
+  EPIC: 0,
+  LEGENDARY: 0,
+  MYTHIC: 0,
+  ULTRA_LEGENDARY: 0,
+});
+
+assert.equal(
+  forcedRareWithStoryCard.cards.every((card) => card.slug !== "story-only-rare"),
+  true,
+  "drop-disabled story cards should not appear in packs",
+);
+
 console.log("pack opening tests passed");
