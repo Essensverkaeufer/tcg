@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { ATTACK_ENERGY_COST, createMatchState, applyAction, validateAction } from "@/lib/game/match/state";
 import { drawCards } from "@/lib/game/abilities/engine";
 import { createMatchView, isHiddenCard } from "@/lib/game/match/view";
+import { cardCatalog } from "@/lib/game/cards";
+import { chooseBotAction } from "@/lib/game/story/bot";
+import { buildStoryEnemyDeck, storyEncounters } from "@/lib/game/story/config";
 import type { CardTemplate } from "@/types/cards";
 
 const leader: CardTemplate = {
@@ -461,6 +464,55 @@ assert.equal(validateAction(protectedState, {
   attackerInstanceId: attacker.instanceId,
   targetInstanceId: wall.instanceId,
 }).ok, true, "buildings should remain valid attack targets");
+
+let botState = createMatchState(
+  "story-bot-play",
+  { id: "story-player", name: "Player", deck: deck("story-player") },
+  { id: "story-bot", name: "Bot", deck: [leader, unit("bot-playable", 4, 4), ...Array.from({ length: 9 }, (_, index) => unit(`bot-extra-${index}`))] },
+  { seed: "story-bot-play-seed", deterministic: true },
+);
+botState = applyAction(botState, { type: "END_TURN", playerId: "story-player" });
+const botPlayAction = chooseBotAction(botState, "story-bot", "NORMAL");
+assert.equal(validateAction(botState, botPlayAction).ok, true, "bot should choose a legal action");
+botState = applyAction(botState, botPlayAction);
+assert.equal(botState.players[1].board.length > 0 || botPlayAction.type === "END_TURN", true, "bot should be able to play or pass legally");
+
+const botProtectedState = createMatchState(
+  "story-bot-building-protect",
+  { id: "story-player", name: "Player", deck: [leader, building("player-wall", 0, 5), ...Array.from({ length: 9 }, (_, index) => unit(`player-wall-extra-${index}`))] },
+  { id: "story-bot", name: "Bot", deck: [leader, unit("bot-attacker", 6, 5), ...Array.from({ length: 9 }, (_, index) => unit(`bot-wall-extra-${index}`))] },
+  { seed: "story-bot-building-protect-seed", deterministic: true },
+);
+const botWall = botProtectedState.players[0].hand.find((card) => card.template.slug === "player-wall")!;
+botProtectedState.players[0].hand = botProtectedState.players[0].hand.filter((card) => card.instanceId !== botWall.instanceId);
+botWall.zone = "BOARD";
+botProtectedState.players[0].board.push(botWall);
+const botAttacker = botProtectedState.players[1].hand.find((card) => card.template.slug === "bot-attacker")!;
+botProtectedState.players[1].hand = [];
+botAttacker.zone = "BOARD";
+botAttacker.enteredTurn = 0;
+botAttacker.exhausted = false;
+botProtectedState.players[1].board.push(botAttacker);
+botProtectedState.activePlayerId = "story-bot";
+botProtectedState.players[1].energyCurrent = 3;
+const botAttackAction = chooseBotAction(botProtectedState, "story-bot", "HARD");
+assert.equal(botAttackAction.type, "ATTACK", "bot should attack when it has a legal attacker");
+assert.equal(botAttackAction.type === "ATTACK" ? botAttackAction.targetInstanceId : "", botWall.instanceId, "bot should attack protecting buildings before leader");
+
+const stunnedBotState = structuredClone(botProtectedState);
+stunnedBotState.players[1].board[0].stunnedUntilTurn = stunnedBotState.turn + 3;
+const stunnedBotAction = chooseBotAction(stunnedBotState, "story-bot", "HARD");
+assert.notEqual(stunnedBotAction.type === "ATTACK" ? stunnedBotAction.attackerInstanceId : "", stunnedBotState.players[1].board[0].instanceId, "bot should not attack with stunned cards");
+
+const bossEncounter = storyEncounters.find((encounter) => encounter.slug === "woke-mind-virus")!;
+const bossDeck = buildStoryEnemyDeck(cardCatalog, bossEncounter);
+const bossState = createMatchState(
+  "story-boss",
+  { id: "story-player", name: "Player", deck: deck("story-boss-player") },
+  { id: "story-bot", name: bossEncounter.name, deck: bossDeck },
+  { seed: "story-boss-seed", deterministic: true },
+);
+assert.equal(bossState.players[1].leader.template.slug, "woke-mind-virus", "story final boss should use the Woke Mind Virus leader");
 
 let coinHeadsState = createMatchState(
   "coin-heads",

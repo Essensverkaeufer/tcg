@@ -277,6 +277,30 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["gacha_pull_history"]["Insert"]>;
         Relationships: [];
       };
+      story_progress: {
+        Row: {
+          user_id: string;
+          encounter_slug: string;
+          status: "ATTEMPTED" | "COMPLETED";
+          wins: number;
+          losses: number;
+          best_turns: number | null;
+          completed_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          encounter_slug: string;
+          status?: Database["public"]["Tables"]["story_progress"]["Row"]["status"];
+          wins?: number;
+          losses?: number;
+          best_turns?: number | null;
+          completed_at?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["story_progress"]["Insert"]>;
+        Relationships: [];
+      };
       matchmaking_tickets: {
         Row: {
           id: string;
