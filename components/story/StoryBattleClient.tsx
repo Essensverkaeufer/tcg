@@ -8,25 +8,16 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useSiteAudio } from "@/components/audio/SiteAudioProvider";
 import { getAbilityConditionError, getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { resolveCardImageUrl } from "@/lib/game/card-images";
-import { validateDeck } from "@/lib/game/decks/validateDeck";
-import { cardRowToTemplate } from "@/lib/game/mapping";
 import { applyAction, ATTACK_ENERGY_COST, createMatchState, getCardCost, validateAction } from "@/lib/game/match/state";
 import { getNextStoryEncounter, getStoryEncounter, buildStoryEnemyDeck } from "@/lib/game/story/config";
 import { chooseBotAction } from "@/lib/game/story/bot";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { AbilityDefinition, CardTemplate } from "@/types/cards";
 import type { CardInstance, MatchAction, MatchPlayerState, MatchState } from "@/types/match";
 
 type TargetMode = "inspect" | "attack" | "ability" | "item";
 
-type DeckCardRow = {
-  quantity: number;
-  card_templates: Parameters<typeof cardRowToTemplate>[0] | null;
-};
-
 export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) {
   const encounter = useMemo(() => getStoryEncounter(encounterSlug), [encounterSlug]);
-  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const { user } = useAuth();
   const { playTurnCue } = useSiteAudio();
   const reportedMatchId = useRef("");
@@ -59,43 +50,17 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
         return;
       }
 
-      const [cardsResult, deckResult] = await Promise.all([
-        supabase.from("card_templates").select("*"),
-        supabase
-          .from("decks")
-          .select("id, name, deck_cards(quantity, card_templates(*))")
-          .eq("user_id", user.id)
-          .eq("is_active", true)
-          .limit(1)
-          .maybeSingle(),
-      ]);
+      const deckResponse = await fetch("/api/story/active-deck", { cache: "no-store" });
+      const deckPayload = await deckResponse.json();
       if (cancelled) return;
 
-      if (cardsResult.error) {
-        setBlocked(cardsResult.error.message);
-        return;
-      }
-      if (deckResult.error) {
-        setBlocked(deckResult.error.message);
-        return;
-      }
-      if (!deckResult.data) {
-        setBlocked("Make and activate a legal deck before starting story mode.");
+      if (!deckResponse.ok) {
+        setBlocked(deckPayload.error ?? "Could not load your active deck.");
         return;
       }
 
-      const catalog = (cardsResult.data ?? []).map(cardRowToTemplate);
-      const rows = (deckResult.data.deck_cards ?? []) as unknown as DeckCardRow[];
-      const playerDeck = rows.flatMap((row) => {
-        if (!row.card_templates) return [];
-        return Array.from({ length: row.quantity }, () => cardRowToTemplate(row.card_templates!));
-      });
-      const grouped = groupDeck(playerDeck);
-      const validation = validateDeck(grouped);
-      if (!validation.valid) {
-        setBlocked(validation.errors[0] ?? "Active deck is not legal.");
-        return;
-      }
+      const catalog = (deckPayload.catalog ?? []) as CardTemplate[];
+      const playerDeck = (deckPayload.deck?.cards ?? []) as CardTemplate[];
 
       const enemyDeck = buildStoryEnemyDeck(catalog, encounter);
       const matchId = `story-${encounter.slug}-${Date.now()}`;
@@ -107,7 +72,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
       );
 
       setState(nextState);
-      setMessage(`Loaded ${deckResult.data.name} vs ${encounter.name}.`);
+      setMessage(`Loaded ${deckPayload.deck.name} vs ${encounter.name}.`);
       setBlocked("");
       setSelectedId("");
       setTargetMode("inspect");
@@ -119,7 +84,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
     return () => {
       cancelled = true;
     };
-  }, [encounter, supabase, user]);
+  }, [encounter, user]);
 
   useEffect(() => {
     if (!state || state.phase === "FINISHED") return;
@@ -420,15 +385,6 @@ function MiniCard({ card, selected, currentTurn, hand, leader }: { card: CardIns
 
 function CardBack() {
   return <div className="grid h-40 w-28 shrink-0 place-items-center rounded-lg border border-rose-400/40 bg-slate-950 text-xs font-black uppercase text-rose-200">Hidden</div>;
-}
-
-function groupDeck(deck: CardTemplate[]) {
-  const grouped = new Map<string, { card: CardTemplate; quantity: number }>();
-  for (const card of deck) {
-    const current = grouped.get(card.slug);
-    grouped.set(card.slug, { card, quantity: (current?.quantity ?? 0) + 1 });
-  }
-  return [...grouped.values()];
 }
 
 function canAnyAttack(state: MatchState, attacker: CardInstance, opponent: MatchPlayerState) {
