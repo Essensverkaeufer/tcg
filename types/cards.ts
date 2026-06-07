@@ -56,9 +56,17 @@ export type EffectType =
   | "ADD_RANDOM_CARD";
 
 export type AbilityCondition = {
-  type: "PLAYED_CARDS_THIS_TURN" | "TARGET_DAMAGED" | "ONCE_PER_GAME" | "RARITY_IN_HAND";
+  type:
+    | "PLAYED_CARDS_THIS_TURN"
+    | "TARGET_DAMAGED"
+    | "ONCE_PER_GAME"
+    | "RARITY_IN_HAND"
+    | "CARD_IN_HAND"
+    | "LEADER_IS";
   operator?: ">=" | "<=" | "==" | "!=";
   value?: number | string;
+  cardSlug?: string;
+  cardSlugs?: string[];
 };
 
 export type AbilityEffect = {

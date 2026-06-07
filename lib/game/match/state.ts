@@ -1,4 +1,4 @@
-import { dealDamage, drawCards, findCard, getAbilityCooldownRemaining, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
+import { dealDamage, drawCards, findCard, getAbilityConditionError, getAbilityCooldownRemaining, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
 import type { CardTemplate } from "@/types/cards";
 import type { CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
 
@@ -111,6 +111,8 @@ export function validateAction(state: MatchState, action: MatchAction): Validati
     const cooldownRemaining = getAbilityCooldownRemaining(source, ability.id, sourceOwner.turnsStarted);
     if (cooldownRemaining > 0) return { ok: false, reason: `Ability is on cooldown for ${cooldownRemaining} more turn(s).` };
     if ((source.stunnedUntilTurn ?? 0) >= state.turn) return { ok: false, reason: "Card is stunned." };
+    const conditionError = getAbilityConditionError(state, ability, action.playerId);
+    if (conditionError) return { ok: false, reason: conditionError };
     const targetError = getAbilityTargetError(state, ability, action.playerId, action.targetInstanceId);
     if (targetError) return { ok: false, reason: targetError };
   }

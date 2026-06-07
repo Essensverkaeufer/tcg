@@ -184,7 +184,24 @@ export const cardCatalog: CardTemplate[] = [
   zeroStatCard("frenchplaty", "frenchplaty", "RARE", "CHARACTER"),
   zeroStatCard("tweeku", "tweeku", "RARE", "CHARACTER"),
   zeroStatCard("mwyi-inactive", "mwyi (inactive)", "MYTHIC", "CHARACTER"),
-  zeroStatCard("vanessa", "Vanessa", "EPIC", "CHARACTER", "AMERICAN"),
+  {
+    ...zeroStatCard("vanessa", "Vanessa", "EPIC", "CHARACTER", "AMERICAN"),
+    abilityData: [
+      {
+        id: "vanessa-heartbroken",
+        label: "Heartbroken",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        cooldownTurns: 3,
+        conditions: [
+          { type: "LEADER_IS", cardSlugs: ["garrett-current", "garrett-prime"] },
+        ],
+        effects: [
+          { type: "BUFF_ATTACK", target: "SELF", amount: 3, duration: "PERMANENT" },
+        ],
+      },
+    ],
+  },
   zeroStatCard("the1nutbandit", "the1nutbandit", "ULTRA_LEGENDARY", "CHARACTER"),
   zeroStatCard("pacmanpowerghost", "pacmanpowerghost", "RARE", "CHARACTER"),
   zeroStatCard("kyu-sugardust", "Kyu Sugardust", "COMMON", "CHARACTER"),
@@ -211,7 +228,24 @@ export const cardCatalog: CardTemplate[] = [
   zeroStatCard("poland", "Poland", "EPIC", "BUILDING"),
   zeroStatCard("florida", "Florida", "EPIC", "BUILDING", "AMERICAN"),
   zeroStatCard("texas", "Texas", "EPIC", "BUILDING", "AMERICAN"),
-  zeroStatCard("jpjs-basement", "jpjs Basement", "MYTHIC", "BUILDING"),
+  {
+    ...zeroStatCard("jpjs-basement", "jpjs Basement", "MYTHIC", "BUILDING"),
+    abilityData: [
+      {
+        id: "jpjs-basement-trap",
+        label: "Trap",
+        trigger: "ACTIVATED",
+        requiresTarget: true,
+        cooldownTurns: 3,
+        conditions: [
+          { type: "CARD_IN_HAND", cardSlug: "jpj" },
+        ],
+        effects: [
+          { type: "STUN", target: "ENEMY_CHARACTER", amount: 3, duration: "TURN" },
+        ],
+      },
+    ],
+  },
   zeroStatCard("white-monster", "White Monster", "RARE", "ITEM", "BASED"),
   zeroStatCard("the-bong", "The Bong", "LEGENDARY", "ITEM", "AMERICAN"),
   zeroStatCard("assault-rifle", "assault rifle", "EPIC", "ITEM", "AMERICAN"),

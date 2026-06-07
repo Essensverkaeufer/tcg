@@ -1,4 +1,4 @@
-import type { AbilityDefinition, AbilityEffect, AbilityTrigger } from "@/types/cards";
+import type { AbilityCondition, AbilityDefinition, AbilityEffect, AbilityTrigger } from "@/types/cards";
 import type { CardInstance, MatchPlayerState, MatchState } from "@/types/match";
 
 export type AbilityEvent = {
@@ -34,6 +34,21 @@ export function getAbilityTargetError(state: MatchState, ability: AbilityDefinit
   return undefined;
 }
 
+export function getAbilityConditionError(state: MatchState, ability: AbilityDefinition, controllerId: string) {
+  const failedCondition = (ability.conditions ?? []).find((condition) => !conditionPasses(state, condition, controllerId));
+  if (!failedCondition) return undefined;
+
+  if (failedCondition.type === "CARD_IN_HAND") {
+    return `${ability.label} needs ${failedCondition.cardSlug ?? failedCondition.value ?? "a required card"} in hand.`;
+  }
+
+  if (failedCondition.type === "LEADER_IS") {
+    return `${ability.label} needs the required leader active.`;
+  }
+
+  return `${ability.label}'s condition is not met.`;
+}
+
 export function resolveTriggeredAbilities(state: MatchState, event: AbilityEvent): AbilityResolution {
   let nextState = structuredClone(state);
   const messages: string[] = [];
@@ -46,7 +61,7 @@ export function resolveTriggeredAbilities(state: MatchState, event: AbilityEvent
   for (const ability of source.template.abilityData) {
     if (ability.trigger !== event.trigger) continue;
     if (event.abilityId && ability.id !== event.abilityId) continue;
-    if (!conditionsPass(nextState, ability, event.controllerId)) continue;
+    if (getAbilityConditionError(nextState, ability, event.controllerId)) continue;
     if (ability.oncePerGame && hasUsedOncePerGame(nextState, event.controllerId, ability.id)) continue;
     if (ability.trigger === "ACTIVATED" && source.activatedThisTurn.includes(ability.id)) continue;
     if (ability.trigger === "ACTIVATED") {
@@ -178,7 +193,7 @@ function applyEffect(
         messages.push(`${ability.label} shielded ${target.template.name}.`);
         break;
       case "STUN":
-        target.stunnedUntilTurn = nextState.turn + 1;
+        target.stunnedUntilTurn = nextState.turn + Math.max(1, effect.amount ?? 1);
         messages.push(`${ability.label} stunned ${target.template.name}.`);
         break;
       case "BLIND":
@@ -427,18 +442,28 @@ function seededNumber(seed: string) {
   return (hash >>> 0) / 4294967296;
 }
 
-function conditionsPass(state: MatchState, ability: AbilityDefinition, controllerId: string) {
+function conditionPasses(state: MatchState, condition: AbilityCondition, controllerId: string) {
   const controller = getPlayer(state, controllerId);
 
-  return (ability.conditions ?? []).every((condition) => {
-    if (condition.type === "PLAYED_CARDS_THIS_TURN") {
-      const value = Number(condition.value ?? 0);
-      if (condition.operator === ">=") return controller.playedCardsThisTurn >= value;
-      if (condition.operator === "<=") return controller.playedCardsThisTurn <= value;
-      if (condition.operator === "==") return controller.playedCardsThisTurn === value;
-    }
-    return true;
-  });
+  if (condition.type === "PLAYED_CARDS_THIS_TURN") {
+    const value = Number(condition.value ?? 0);
+    if (condition.operator === ">=") return controller.playedCardsThisTurn >= value;
+    if (condition.operator === "<=") return controller.playedCardsThisTurn <= value;
+    if (condition.operator === "==") return controller.playedCardsThisTurn === value;
+    if (condition.operator === "!=") return controller.playedCardsThisTurn !== value;
+  }
+
+  if (condition.type === "CARD_IN_HAND") {
+    const slug = String(condition.cardSlug ?? condition.value ?? "");
+    return controller.hand.some((card) => card.template.slug === slug);
+  }
+
+  if (condition.type === "LEADER_IS") {
+    const slugs = condition.cardSlugs ?? (condition.cardSlug ? [condition.cardSlug] : [String(condition.value ?? "")]);
+    return slugs.includes(controller.leader.template.slug);
+  }
+
+  return true;
 }
 
 function hasUsedOncePerGame(state: MatchState, playerId: string, abilityId: string) {

@@ -163,6 +163,42 @@ function garrettPrimeLeader(): CardTemplate {
   };
 }
 
+function jpjsBasement(): CardTemplate {
+  return {
+    ...building("jpjs-basement", 0, 10),
+    rarity: "MYTHIC",
+    abilityData: [
+      {
+        id: "jpjs-basement-trap",
+        label: "Trap",
+        trigger: "ACTIVATED",
+        requiresTarget: true,
+        cooldownTurns: 3,
+        conditions: [{ type: "CARD_IN_HAND", cardSlug: "jpj" }],
+        effects: [{ type: "STUN", target: "ENEMY_CHARACTER", amount: 3, duration: "TURN" }],
+      },
+    ],
+  };
+}
+
+function vanessaCard(): CardTemplate {
+  return {
+    ...unit("vanessa", 2, 4, "AMERICAN"),
+    rarity: "EPIC",
+    abilityData: [
+      {
+        id: "vanessa-heartbroken",
+        label: "Heartbroken",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        cooldownTurns: 3,
+        conditions: [{ type: "LEADER_IS", cardSlugs: ["garrett-current", "garrett-prime"] }],
+        effects: [{ type: "BUFF_ATTACK", target: "SELF", amount: 3, duration: "PERMANENT" }],
+      },
+    ],
+  };
+}
+
 function building(slug: string, attack = 0, health = 3): CardTemplate {
   return {
     slug,
@@ -562,6 +598,88 @@ assert.equal(validateAction(tuffState, {
   sourceInstanceId: tuffState.players[0].leader.instanceId,
   abilityId: "necrp-tuff-board-wipe",
 }).ok, true, "Tuff Sweep should be usable on the fourth owner turn after use");
+
+const basementBlockedState = createMatchState(
+  "jpjs-basement-blocked",
+  { id: "a", name: "A", deck: [leader, jpjsBasement(), ...Array.from({ length: 10 }, (_, index) => unit(`a-basement-blocked-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("trap-target", 1, 6), ...Array.from({ length: 10 }, (_, index) => unit(`b-basement-blocked-extra-${index}`))] },
+  { seed: "jpjs-basement-blocked-seed", deterministic: true },
+);
+const blockedBasement = basementBlockedState.players[0].hand.find((card) => card.template.slug === "jpjs-basement")!;
+basementBlockedState.players[0].hand = basementBlockedState.players[0].hand.filter((card) => card.instanceId !== blockedBasement.instanceId);
+blockedBasement.zone = "BOARD";
+basementBlockedState.players[0].board.push(blockedBasement);
+const blockedTrapTarget = basementBlockedState.players[1].hand.find((card) => card.template.slug === "trap-target")!;
+basementBlockedState.players[1].hand = basementBlockedState.players[1].hand.filter((card) => card.instanceId !== blockedTrapTarget.instanceId);
+blockedTrapTarget.zone = "BOARD";
+basementBlockedState.players[1].board.push(blockedTrapTarget);
+assert.deepEqual(validateAction(basementBlockedState, {
+  type: "USE_ABILITY",
+  playerId: basementBlockedState.players[0].playerId,
+  sourceInstanceId: blockedBasement.instanceId,
+  abilityId: "jpjs-basement-trap",
+  targetInstanceId: blockedTrapTarget.instanceId,
+}), { ok: false, reason: "Trap needs jpj in hand." }, "JPJ's Basement trap should require jpj in hand");
+
+let basementState = createMatchState(
+  "jpjs-basement",
+  { id: "a", name: "A", deck: [leader, jpjsBasement(), unit("jpj"), ...Array.from({ length: 10 }, (_, index) => unit(`a-basement-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("trap-target", 1, 6), ...Array.from({ length: 10 }, (_, index) => unit(`b-basement-extra-${index}`))] },
+  { seed: "jpjs-basement-seed", deterministic: true },
+);
+const basement = basementState.players[0].hand.find((card) => card.template.slug === "jpjs-basement")!;
+basementState.players[0].hand = basementState.players[0].hand.filter((card) => card.instanceId !== basement.instanceId);
+basement.zone = "BOARD";
+basementState.players[0].board.push(basement);
+const trapTarget = basementState.players[1].hand.find((card) => card.template.slug === "trap-target")!;
+basementState.players[1].hand = basementState.players[1].hand.filter((card) => card.instanceId !== trapTarget.instanceId);
+trapTarget.zone = "BOARD";
+basementState.players[1].board.push(trapTarget);
+basementState = applyAction(basementState, {
+  type: "USE_ABILITY",
+  playerId: basementState.players[0].playerId,
+  sourceInstanceId: basement.instanceId,
+  abilityId: "jpjs-basement-trap",
+  targetInstanceId: trapTarget.instanceId,
+});
+assert.equal(basementState.players[1].board[0].stunnedUntilTurn, 4, "JPJ's Basement should trap the target for 3 turns");
+assert.equal(basementState.players[0].board[0].abilityCooldowns["jpjs-basement-trap"], 5, "JPJ's Basement trap should have a 3-turn cooldown");
+
+let vanessaState = createMatchState(
+  "vanessa-heartbroken",
+  { id: "a", name: "A", deck: [garrettPrimeLeader(), vanessaCard(), ...Array.from({ length: 10 }, (_, index) => unit(`a-vanessa-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-vanessa") },
+  { seed: "vanessa-heartbroken-seed", deterministic: true },
+);
+const vanessa = vanessaState.players[0].hand.find((card) => card.template.slug === "vanessa")!;
+vanessaState.players[0].hand = vanessaState.players[0].hand.filter((card) => card.instanceId !== vanessa.instanceId);
+vanessa.zone = "BOARD";
+vanessaState.players[0].board.push(vanessa);
+vanessaState = applyAction(vanessaState, {
+  type: "USE_ABILITY",
+  playerId: vanessaState.players[0].playerId,
+  sourceInstanceId: vanessa.instanceId,
+  abilityId: "vanessa-heartbroken",
+});
+assert.equal(vanessaState.players[0].board[0].currentAttack, 5, "Heartbroken should increase Vanessa's attack by 3 with Garrett as leader");
+assert.equal(vanessaState.players[0].board[0].abilityCooldowns["vanessa-heartbroken"], 5, "Heartbroken should have a 3-turn cooldown");
+
+const vanessaBlockedState = createMatchState(
+  "vanessa-heartbroken-blocked",
+  { id: "a", name: "A", deck: [leader, vanessaCard(), ...Array.from({ length: 10 }, (_, index) => unit(`a-vanessa-blocked-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-vanessa-blocked") },
+  { seed: "vanessa-heartbroken-blocked-seed", deterministic: true },
+);
+const blockedVanessa = vanessaBlockedState.players[0].hand.find((card) => card.template.slug === "vanessa")!;
+vanessaBlockedState.players[0].hand = vanessaBlockedState.players[0].hand.filter((card) => card.instanceId !== blockedVanessa.instanceId);
+blockedVanessa.zone = "BOARD";
+vanessaBlockedState.players[0].board.push(blockedVanessa);
+assert.deepEqual(validateAction(vanessaBlockedState, {
+  type: "USE_ABILITY",
+  playerId: vanessaBlockedState.players[0].playerId,
+  sourceInstanceId: blockedVanessa.instanceId,
+  abilityId: "vanessa-heartbroken",
+}), { ok: false, reason: "Heartbroken needs the required leader active." }, "Heartbroken should require Garrett Current or Garrett Prime as leader");
 
 let flexState = createMatchState(
   "garrett-flex",
