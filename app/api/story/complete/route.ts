@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getStoryEncounter } from "@/lib/game/story/config";
+import { isStoryTesterUsername } from "@/lib/game/story/testing";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 
 const completeSchema = z.object({
@@ -23,7 +24,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unknown story encounter." }, { status: 404 });
   }
 
-  if (encounter.requiredPreviousSlug) {
+  const profile = await auth.supabase.from("profiles").select("username").eq("id", auth.user.id).maybeSingle();
+  const hasTesterAccess = isStoryTesterUsername(profile.data?.username);
+
+  if (encounter.requiredPreviousSlug && !hasTesterAccess) {
     const previous = await auth.supabase
       .from("story_progress")
       .select("status")
