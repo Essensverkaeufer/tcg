@@ -188,6 +188,21 @@ function applyEffect(
         target.currentAura = Math.max(0, target.currentAura + (effect.amount ?? 0));
         messages.push(`${ability.label} changed ${target.template.name}'s aura by ${effect.amount ?? 0}.`);
         break;
+      case "CHANCE_DESTROY": {
+        const chance = Math.max(0, Math.min(1, effect.chance ?? 0));
+        if (nextRandom(nextState) < chance) {
+          target.currentHealth = 0;
+          messages.push(`${ability.label} consumed ${target.template.name}.`);
+          const death = resolveTriggeredAbilities(nextState, {
+            trigger: "ON_DEATH",
+            source: target,
+            controllerId: target.ownerId,
+          });
+          nextState = death.state;
+          messages.push(...death.messages);
+        }
+        break;
+      }
       case "SHIELD":
         target.shielded = true;
         messages.push(`${ability.label} shielded ${target.template.name}.`);
@@ -333,6 +348,8 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
     case "FRIENDLY_LEADER":
     case "ALLY_LEADER":
       return [controller.leader];
+    case "FRIENDLY_BOARD_AND_LEADER":
+      return [controller.leader, ...controller.board].filter((card) => matchesCardSlug(card, effect.cardSlug));
     case "ENEMY_LEADER":
       return [opponent.leader];
     case "FRIENDLY_CHARACTER":
@@ -381,7 +398,7 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
 }
 
 function isEffectTargeted(effect: AbilityEffect) {
-  return !["SELF", "RANDOM_ENEMY", "RANDOM_ENEMY_CHARACTER", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
+  return !["SELF", "FRIENDLY_BOARD_AND_LEADER", "RANDOM_ENEMY", "RANDOM_ENEMY_CHARACTER", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
 }
 
 function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controllerId: string, target: CardInstance) {
@@ -393,6 +410,8 @@ function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controlle
     case "FRIENDLY_LEADER":
     case "ALLY_LEADER":
       return target.instanceId === controller.leader.instanceId;
+    case "FRIENDLY_BOARD_AND_LEADER":
+      return target.instanceId === controller.leader.instanceId || (target.ownerId === controller.playerId && target.zone === "BOARD");
     case "ENEMY_LEADER":
       return target.instanceId === opponent.leader.instanceId;
     case "FRIENDLY_CHARACTER":

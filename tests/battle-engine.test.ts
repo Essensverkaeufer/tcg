@@ -57,6 +57,36 @@ function testItem(slug: string, attack: number, health: number, aura: number): C
   };
 }
 
+function wokeDeployable(chance = 0.05): CardTemplate {
+  return {
+    slug: `woke-deployable-${chance}`,
+    name: "Woke Deployable",
+    description: "Risky global item",
+    flavorText: "",
+    rarity: "DIVINE",
+    cardType: "ITEM",
+    attack: 0,
+    health: 0,
+    size: 0,
+    aura: 0,
+    imageUrl: "",
+    abilityData: [
+      {
+        id: "woke-deploy-test",
+        label: "Deploy Brainrot",
+        trigger: "ON_PLAY",
+        requiresTarget: false,
+        effects: [
+          { type: "BUFF_ATTACK", target: "FRIENDLY_BOARD_AND_LEADER", amount: 2, duration: "PERMANENT" },
+          { type: "BUFF_HEALTH", target: "FRIENDLY_BOARD_AND_LEADER", amount: 4, duration: "PERMANENT" },
+          { type: "BUFF_AURA", target: "FRIENDLY_BOARD_AND_LEADER", amount: 2, duration: "PERMANENT" },
+          { type: "CHANCE_DESTROY", target: "FRIENDLY_BOARD_AND_LEADER", chance },
+        ],
+      },
+    ],
+  };
+}
+
 function coinUnit(slug: string): CardTemplate {
   return {
     slug,
@@ -465,6 +495,78 @@ assert.equal(rifleNormal.players[0].board[0].currentAttack, 12, "assault rifle s
 assert.equal(rifleNormal.players[0].board[0].currentHealth, 6, "assault rifle should stay normal health on non-American characters");
 assert.equal(rifleNormal.messages.some((message) => message.startsWith("Combo!")), false, "normal item attachment should not log a combo");
 
+let wokeDeployState = createMatchState(
+  "woke-deploy-safe",
+  {
+    id: "a",
+    name: "A",
+    deck: [
+      leader,
+      wokeDeployable(0),
+      unit("deploy-board-a", 3, 4),
+      unit("deploy-board-b", 2, 5),
+      ...Array.from({ length: 4 }, (_, index) => unit(`deploy-extra-${index}`)),
+    ],
+  },
+  { id: "b", name: "B", deck: deck("b-deploy") },
+  { seed: "woke-deploy-safe-seed", deterministic: true },
+);
+for (const slug of ["deploy-board-a", "deploy-board-b"]) {
+  const staged = wokeDeployState.players[0].hand.find((card) => card.template.slug === slug)!;
+  wokeDeployState.players[0].hand = wokeDeployState.players[0].hand.filter((card) => card.instanceId !== staged.instanceId);
+  staged.zone = "BOARD";
+  wokeDeployState.players[0].board.push(staged);
+}
+wokeDeployState.players[0].energyCurrent = 10;
+const safeWokeItem = wokeDeployState.players[0].hand.find((card) => card.template.slug === "woke-deployable-0")!;
+wokeDeployState = applyAction(wokeDeployState, {
+  type: "PLAY_CARD",
+  playerId: "a",
+  cardInstanceId: safeWokeItem.instanceId,
+  targetInstanceId: wokeDeployState.players[0].leader.instanceId,
+});
+assert.equal(wokeDeployState.players[0].leader.currentAttack, 3, "Woke deployable should buff the friendly leader attack");
+assert.equal(wokeDeployState.players[0].leader.currentHealth, 29, "Woke deployable should buff the friendly leader health");
+assert.equal(wokeDeployState.players[0].leader.currentAura, 2, "Woke deployable should buff the friendly leader aura");
+assert.equal(wokeDeployState.players[0].board[0].currentAttack, 5, "Woke deployable should buff current board attack");
+assert.equal(wokeDeployState.players[0].board[1].currentHealth, 9, "Woke deployable should buff current board health");
+assert.equal(wokeDeployState.phase, "MAIN", "0% Woke deployable should not destroy anything");
+
+let wokeDeployDoomState = createMatchState(
+  "woke-deploy-doom",
+  {
+    id: "a",
+    name: "A",
+    deck: [
+      leader,
+      wokeDeployable(1),
+      unit("doom-board-a", 3, 4),
+      unit("doom-board-b", 2, 5),
+      ...Array.from({ length: 4 }, (_, index) => unit(`doom-extra-${index}`)),
+    ],
+  },
+  { id: "b", name: "B", deck: deck("b-doom") },
+  { seed: "woke-deploy-doom-seed", deterministic: true },
+);
+for (const slug of ["doom-board-a", "doom-board-b"]) {
+  const staged = wokeDeployDoomState.players[0].hand.find((card) => card.template.slug === slug)!;
+  wokeDeployDoomState.players[0].hand = wokeDeployDoomState.players[0].hand.filter((card) => card.instanceId !== staged.instanceId);
+  staged.zone = "BOARD";
+  wokeDeployDoomState.players[0].board.push(staged);
+}
+wokeDeployDoomState.players[0].energyCurrent = 10;
+const doomWokeItem = wokeDeployDoomState.players[0].hand.find((card) => card.template.slug === "woke-deployable-1")!;
+wokeDeployDoomState = applyAction(wokeDeployDoomState, {
+  type: "PLAY_CARD",
+  playerId: "a",
+  cardInstanceId: doomWokeItem.instanceId,
+  targetInstanceId: wokeDeployDoomState.players[0].leader.instanceId,
+});
+assert.equal(wokeDeployDoomState.phase, "FINISHED", "100% Woke deployable should be able to destroy the leader");
+assert.equal(wokeDeployDoomState.winnerId, "b", "destroying your own leader should lose the match");
+assert.equal(wokeDeployDoomState.players[0].graveyard.some((card) => card.template.slug === "doom-board-a"), true, "Woke deployable should roll destruction for each board card");
+assert.equal(wokeDeployDoomState.players[0].graveyard.some((card) => card.template.slug === "doom-board-b"), true, "Woke deployable should roll destruction independently for all current board cards");
+
 const protectedState = createMatchState(
   "building-protect",
   { id: "a", name: "A", deck: [leader, unit("attacker", 3, 3), ...Array.from({ length: 9 }, (_, index) => unit(`a-extra-${index}`))] },
@@ -591,6 +693,21 @@ const bossState = createMatchState(
   { seed: "story-boss-seed", deterministic: true },
 );
 assert.equal(bossState.players[1].leader.template.slug, "woke-mind-virus", "story final boss should use the Woke Mind Virus leader");
+
+const chapterTwoFirst = storyEncounters.find((encounter) => encounter.slug === "chapter-2-ada-printa")!;
+assert.equal(chapterTwoFirst.chapter, 2, "chapter 2 first fight should be marked as chapter 2");
+assert.equal(chapterTwoFirst.requiredPreviousSlug, "woke-mind-virus", "chapter 2 should unlock after the first Woke Mind Virus fight");
+const chapterTwoFinal = storyEncounters.find((encounter) => encounter.slug === "chapter-2-woke-mind-virus")!;
+assert.equal(chapterTwoFinal.rewardSlug, "woke-mind-virus-deployable", "chapter 2 final boss should grant the deployable Woke Mind Virus");
+const chapterTwoBossDeck = buildStoryEnemyDeck(cardCatalog, chapterTwoFinal);
+const chapterTwoBossState = createMatchState(
+  "story-chapter-2-boss",
+  { id: "story-player", name: "Player", deck: deck("story-chapter-2-player") },
+  { id: "story-bot", name: chapterTwoFinal.name, deck: chapterTwoBossDeck },
+  { seed: "story-chapter-2-boss-seed", deterministic: true },
+);
+assert.equal(chapterTwoBossState.players[1].leader.template.slug, "woke-mind-virus-ascended-story-leader", "chapter 2 final boss should use the ascended Woke leader");
+assert.equal(cardCatalog.find((card) => card.slug === "woke-mind-virus-deployable")?.dropEnabled, false, "chapter 2 final reward should not drop from packs");
 
 let coinHeadsState = createMatchState(
   "coin-heads",

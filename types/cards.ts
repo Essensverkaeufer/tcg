@@ -23,6 +23,7 @@ export type AbilityTarget =
   | "FRIENDLY_LEADER"
   | "ALLY_CHARACTER"
   | "ALLY_LEADER"
+  | "FRIENDLY_BOARD_AND_LEADER"
   | "ENEMY_BUILDING"
   | "ENEMY_CHARACTER"
   | "ENEMY_BOARD_CHARACTERS"
@@ -43,6 +44,7 @@ export type EffectType =
   | "BUFF_HEALTH"
   | "BUFF_SIZE"
   | "BUFF_AURA"
+  | "CHANCE_DESTROY"
   | "DRAW"
   | "DESTROY"
   | "SUMMON"
@@ -74,6 +76,7 @@ export type AbilityEffect = {
   type: EffectType;
   target: AbilityTarget;
   amount?: number;
+  chance?: number;
   cardSlug?: string;
   duration?: "TURN" | "PERMANENT";
   metadata?: Record<string, unknown>;

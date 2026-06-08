@@ -11,6 +11,7 @@ type StoryProgressEncounter = {
   slug: string;
   name: string;
   description: string;
+  chapter: 1 | 2;
   difficulty: StoryDifficulty;
   position: { x: number; y: number };
   status: StoryProgressStatus;
@@ -49,7 +50,7 @@ export function StoryMapClient() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.3em] text-rose-300">Story Mode</p>
-              <h1 className="mt-2 text-4xl font-black">Road to the Woke Mind Virus</h1>
+              <h1 className="mt-2 text-4xl font-black">Story Chapters</h1>
               <p className="mt-2 max-w-2xl text-sm font-bold text-slate-400">{message}</p>
             </div>
             <Link href="/decks" className="rounded-md border border-white/15 px-4 py-2 text-sm font-black hover:bg-white/10">
@@ -57,19 +58,31 @@ export function StoryMapClient() {
             </Link>
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,#451a35_0%,#111827_48%,#020617_100%)] p-4 shadow-2xl shadow-rose-950/30 sm:p-6">
-            <div className="relative">
-              <div className="absolute bottom-8 left-8 top-8 w-1 rounded-full bg-gradient-to-b from-emerald-400/30 via-amber-300/50 to-rose-500/50 md:left-8 md:right-8 md:top-1/2 md:h-1 md:w-auto md:-translate-y-1/2 md:bg-gradient-to-r" />
-              <div className="relative grid gap-4 md:grid-cols-3 xl:grid-cols-6 xl:gap-5">
-                {encounters.map((encounter, index) => (
-                  <EncounterNode key={encounter.slug} encounter={encounter} index={index} />
-                ))}
-              </div>
-            </div>
+          <div className="mt-8 grid gap-8">
+            <ChapterPath title="Chapter 1: Road to the Woke Mind Virus" encounters={encounters.filter((encounter) => encounter.chapter === 1)} />
+            <ChapterPath title="Chapter 2: Viral Aftermath" encounters={encounters.filter((encounter) => encounter.chapter === 2)} />
           </div>
         </section>
       </main>
     </AuthGate>
+  );
+}
+
+function ChapterPath({ title, encounters }: { title: string; encounters: StoryProgressEncounter[] }) {
+  if (!encounters.length) return null;
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,#451a35_0%,#111827_48%,#020617_100%)] p-4 shadow-2xl shadow-rose-950/30 sm:p-6">
+      <h2 className="text-lg font-black">{title}</h2>
+      <div className="relative mt-6">
+        <div className="absolute bottom-8 left-8 top-8 w-1 rounded-full bg-gradient-to-b from-emerald-400/30 via-amber-300/50 to-rose-500/50 md:left-8 md:right-8 md:top-1/2 md:h-1 md:w-auto md:-translate-y-1/2 md:bg-gradient-to-r" />
+        <div className="relative grid gap-4 md:grid-cols-3 xl:grid-cols-6 xl:gap-5">
+          {encounters.map((encounter, index) => (
+            <EncounterNode key={encounter.slug} encounter={encounter} index={index} />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
