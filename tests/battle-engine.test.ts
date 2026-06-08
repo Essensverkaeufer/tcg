@@ -184,6 +184,23 @@ function oncePerGameLeader(): CardTemplate {
   };
 }
 
+function randomEnemyCharacterDestroyLeader(): CardTemplate {
+  return {
+    ...leader,
+    slug: "random-character-destroy-leader",
+    name: "Random Character Destroy Leader",
+    abilityData: [
+      {
+        id: "random-character-destroy",
+        label: "Random Character Destroy",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        effects: [{ type: "DESTROY", target: "RANDOM_ENEMY_CHARACTER" }],
+      },
+    ],
+  };
+}
+
 function jpjsBasement(): CardTemplate {
   return {
     ...building("jpjs-basement", 0, 10),
@@ -540,6 +557,30 @@ assert.deepEqual(validateAction(onceBotState, {
   abilityId: "once-leader-heal",
 }), { ok: false, reason: "Ability was already used this game." }, "once-per-game abilities should stay blocked on later turns");
 assert.equal(chooseBotAction(onceBotState, "story-bot", "NORMAL").type, "END_TURN", "bot should pass instead of repeating a spent once-per-game ability forever");
+
+let randomCharacterDestroyState = createMatchState(
+  "random-character-destroy",
+  { id: "a", name: "A", deck: [randomEnemyCharacterDestroyLeader()] },
+  { id: "b", name: "B", deck: [leader, unit("random-destroy-target", 1, 6), building("random-destroy-building", 0, 10), ...Array.from({ length: 8 }, (_, index) => unit(`random-destroy-extra-${index}`))] },
+  { seed: "random-character-destroy-seed", deterministic: true },
+);
+const randomDestroyTarget = randomCharacterDestroyState.players[1].hand.find((card) => card.template.slug === "random-destroy-target")!;
+const randomDestroyBuilding = randomCharacterDestroyState.players[1].hand.find((card) => card.template.slug === "random-destroy-building")!;
+for (const card of [randomDestroyTarget, randomDestroyBuilding]) {
+  randomCharacterDestroyState.players[1].hand = randomCharacterDestroyState.players[1].hand.filter((entry) => entry.instanceId !== card.instanceId);
+  card.zone = "BOARD";
+  randomCharacterDestroyState.players[1].board.push(card);
+}
+const randomDestroyLeaderHealth = randomCharacterDestroyState.players[1].leader.currentHealth;
+randomCharacterDestroyState = applyAction(randomCharacterDestroyState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: randomCharacterDestroyState.players[0].leader.instanceId,
+  abilityId: "random-character-destroy",
+});
+assert.equal(randomCharacterDestroyState.players[1].leader.currentHealth, randomDestroyLeaderHealth, "random enemy character destroy should not hit leaders");
+assert.equal(randomCharacterDestroyState.players[1].board.some((card) => card.template.slug === "random-destroy-building"), true, "random enemy character destroy should not hit buildings");
+assert.equal(randomCharacterDestroyState.players[1].graveyard.some((card) => card.template.slug === "random-destroy-target"), true, "random enemy character destroy should remove a board character");
 
 const bossEncounter = storyEncounters.find((encounter) => encounter.slug === "woke-mind-virus")!;
 const bossDeck = buildStoryEnemyDeck(cardCatalog, bossEncounter);

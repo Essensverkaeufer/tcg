@@ -370,13 +370,18 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
       const picked = pool[Math.floor(nextRandom(state) * pool.length)];
       return picked ? [picked] : [];
     }
+    case "RANDOM_ENEMY_CHARACTER": {
+      const pool = opponent.board.filter((card) => card.template.cardType === "CHARACTER" && matchesCardSlug(card, effect.cardSlug));
+      const picked = pool[Math.floor(nextRandom(state) * pool.length)];
+      return picked ? [picked] : [];
+    }
     default:
       return [];
   }
 }
 
 function isEffectTargeted(effect: AbilityEffect) {
-  return !["SELF", "RANDOM_ENEMY", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
+  return !["SELF", "RANDOM_ENEMY", "RANDOM_ENEMY_CHARACTER", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
 }
 
 function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controllerId: string, target: CardInstance) {

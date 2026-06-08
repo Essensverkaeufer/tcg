@@ -28,6 +28,7 @@ export type AbilityTarget =
   | "ENEMY_BOARD_CHARACTERS"
   | "ENEMY_LEADER"
   | "RANDOM_ENEMY"
+  | "RANDOM_ENEMY_CHARACTER"
   | "ANY_CHARACTER"
   | "ANY_BUILDING"
   | "BOARD"

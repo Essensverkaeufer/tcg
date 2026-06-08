@@ -67,8 +67,8 @@ export const storyEncounters: StoryEncounter[] = [
   },
   {
     slug: "rowlet-study-session",
-    name: "Study Session",
-    description: "A normal enemy that starts using real stat pressure.",
+    name: "gay Little Puppygirl",
+    description: "A chaotic early boss that starts using ability pressure.",
     difficulty: "NORMAL",
     requiredPreviousSlug: "tutorial-garrett-current",
     position: { x: 25, y: 40 },
@@ -88,8 +88,8 @@ export const storyEncounters: StoryEncounter[] = [
   },
   {
     slug: "jpj-basement-trap",
-    name: "Basement Trap",
-    description: "Control deck with JPJ and basement stun pressure.",
+    name: "buurazu",
+    description: "A bulky boss fight with JPJ support and basement pressure.",
     difficulty: "NORMAL",
     requiredPreviousSlug: "rowlet-study-session",
     position: { x: 43, y: 68 },
@@ -110,8 +110,8 @@ export const storyEncounters: StoryEncounter[] = [
   },
   {
     slug: "necrp-tuff-wall",
-    name: "Tuff Wall",
-    description: "A harder defensive fight with big buildings and high aura.",
+    name: "Anarchy",
+    description: "A volatile boss with safe random character removal and defensive support.",
     difficulty: "HARD",
     requiredPreviousSlug: "jpj-basement-trap",
     position: { x: 61, y: 44 },
@@ -132,8 +132,8 @@ export const storyEncounters: StoryEncounter[] = [
   },
   {
     slug: "pillow-necrp-rest-stop",
-    name: "Pillow Rest Stop",
-    description: "A miniboss that refuses to die politely.",
+    name: "pacmanpowerghost (corrupted)",
+    description: "A corrupted miniboss that blinds key characters and hides behind big walls.",
     difficulty: "HARD",
     requiredPreviousSlug: "necrp-tuff-wall",
     position: { x: 76, y: 66 },

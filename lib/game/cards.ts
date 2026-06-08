@@ -248,7 +248,7 @@ export const cardCatalog: CardTemplate[] = [
         trigger: "ACTIVATED",
         oncePerGame: true,
         requiresTarget: false,
-        effects: [{ type: "DESTROY", target: "RANDOM_ENEMY" }],
+        effects: [{ type: "DESTROY", target: "RANDOM_ENEMY_CHARACTER" }],
       },
     ],
   },
