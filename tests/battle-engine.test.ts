@@ -421,19 +421,19 @@ let zubrCombo = comboState(
   testItem("zubr-beer", 10, 9, 9),
 );
 zubrCombo = equipFirstItem(zubrCombo, zubrCombo.players[0].board[0].instanceId);
-assert.equal(zubrCombo.players[0].board[0].currentAttack, 40, "zubr beer should give necrps drunken dad triple attack buffs");
-assert.equal(zubrCombo.players[0].board[0].currentHealth, 33, "zubr beer should give necrps drunken dad triple health buffs");
-assert.equal(zubrCombo.players[0].board[0].currentAura, 36, "zubr beer should give necrps drunken dad triple aura buffs");
-assert.equal(zubrCombo.messages.includes("Combo! zubr-beer gave necrps-drunken-dad 3x buffs."), true, "zubr combo should be logged");
+assert.equal(zubrCombo.players[0].board[0].currentAttack, 30, "zubr beer should give necrps drunken dad double attack buffs");
+assert.equal(zubrCombo.players[0].board[0].currentHealth, 24, "zubr beer should give necrps drunken dad double health buffs");
+assert.equal(zubrCombo.players[0].board[0].currentAura, 27, "zubr beer should give necrps drunken dad double aura buffs");
+assert.equal(zubrCombo.messages.includes("Combo! zubr-beer gave necrps-drunken-dad 2x buffs."), true, "zubr combo should be logged");
 
 let monsterCombo = comboState(
   { ...unit("mwyi", 6, 4, "MINOR"), aura: 5 },
   testItem("white-monster", 9, 2, 7),
 );
 monsterCombo = equipFirstItem(monsterCombo, monsterCombo.players[0].board[0].instanceId);
-assert.equal(monsterCombo.players[0].board[0].currentAttack, 33, "White Monster should give mwyi triple attack buffs");
-assert.equal(monsterCombo.players[0].board[0].currentHealth, 10, "White Monster should give mwyi triple health buffs");
-assert.equal(monsterCombo.players[0].board[0].currentAura, 26, "White Monster should give mwyi triple aura buffs");
+assert.equal(monsterCombo.players[0].board[0].currentAttack, 24, "White Monster should give mwyi double attack buffs");
+assert.equal(monsterCombo.players[0].board[0].currentHealth, 8, "White Monster should give mwyi double health buffs");
+assert.equal(monsterCombo.players[0].board[0].currentAura, 19, "White Monster should give mwyi double aura buffs");
 
 let bongCombo = createMatchState(
   "bong-combo",
@@ -443,18 +443,18 @@ let bongCombo = createMatchState(
 );
 bongCombo.players[0].energyCurrent = 10;
 bongCombo = equipFirstItem(bongCombo, bongCombo.players[0].leader.instanceId);
-assert.equal(bongCombo.players[0].leader.currentAttack, 26, "The Bong should give Garrett Prime triple attack buffs");
-assert.equal(bongCombo.players[0].leader.currentHealth, 77, "The Bong should give Garrett Prime triple health buffs");
-assert.equal(bongCombo.players[0].leader.currentAura, 34, "The Bong should give Garrett Prime triple aura buffs");
+assert.equal(bongCombo.players[0].leader.currentAttack, 20, "The Bong should give Garrett Prime double attack buffs");
+assert.equal(bongCombo.players[0].leader.currentHealth, 68, "The Bong should give Garrett Prime double health buffs");
+assert.equal(bongCombo.players[0].leader.currentAura, 26, "The Bong should give Garrett Prime double aura buffs");
 
 let rifleCombo = comboState(
   { ...unit("american-target", 2, 3, "AMERICAN"), aura: 0 },
   testItem("assault-rifle", 10, 3, 2),
 );
 rifleCombo = equipFirstItem(rifleCombo, rifleCombo.players[0].board[0].instanceId);
-assert.equal(rifleCombo.players[0].board[0].currentAttack, 32, "assault rifle should give American characters triple attack buffs");
-assert.equal(rifleCombo.players[0].board[0].currentHealth, 12, "assault rifle should give American characters triple health buffs");
-assert.equal(rifleCombo.players[0].board[0].currentAura, 6, "assault rifle should give American characters triple aura buffs");
+assert.equal(rifleCombo.players[0].board[0].currentAttack, 22, "assault rifle should give American characters double attack buffs");
+assert.equal(rifleCombo.players[0].board[0].currentHealth, 9, "assault rifle should give American characters double health buffs");
+assert.equal(rifleCombo.players[0].board[0].currentAura, 4, "assault rifle should give American characters double aura buffs");
 
 let rifleNormal = comboState(
   { ...unit("non-american-target", 2, 3, "BASED"), aura: 0 },

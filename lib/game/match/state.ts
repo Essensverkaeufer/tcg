@@ -352,10 +352,10 @@ function getEnergyForPlayerTurn(state: MatchState, player: MatchPlayerState) {
 }
 
 function getItemComboMultiplier(item: CardTemplate, target: CardTemplate) {
-  if (item.slug === "zubr-beer" && target.slug === "necrps-drunken-dad") return 3;
-  if (item.slug === "white-monster" && target.slug === "mwyi") return 3;
-  if (item.slug === "the-bong" && target.slug === "garrett-prime") return 3;
-  if (item.slug === "assault-rifle" && target.cardType === "CHARACTER" && isAmericanCard(target)) return 3;
+  if (item.slug === "zubr-beer" && target.slug === "necrps-drunken-dad") return 2;
+  if (item.slug === "white-monster" && target.slug === "mwyi") return 2;
+  if (item.slug === "the-bong" && target.slug === "garrett-prime") return 2;
+  if (item.slug === "assault-rifle" && target.cardType === "CHARACTER" && isAmericanCard(target)) return 2;
   return 1;
 }
 
