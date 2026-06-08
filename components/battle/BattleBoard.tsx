@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Activity, BookOpen, Heart, RotateCcw, Skull, Sparkles, Timer } from "lucide-react";
 import { useSiteAudio } from "@/components/audio/SiteAudioProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useBattleVisuals } from "@/components/battle/useBattleVisuals";
 import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { cardCatalog } from "@/lib/game/cards";
@@ -79,6 +80,7 @@ export function BattleBoard() {
   const [deckSource, setDeckSource] = useState("Demo decks loaded.");
   const [loadedDeck, setLoadedDeck] = useState<CardTemplate[] | undefined>();
   const [onlineCatalog, setOnlineCatalog] = useState<CardTemplate[]>(cardCatalog);
+  const visuals = useBattleVisuals(state?.lastEvent);
 
   useEffect(() => {
     const event = state?.lastEvent;
@@ -269,18 +271,18 @@ export function BattleBoard() {
   const winner = state.winnerId ? state.players.find((player) => player.playerId === state.winnerId) : undefined;
 
   return (
-    <section className="battle-arena -mx-4 -my-8 min-h-[calc(100vh-80px)] overflow-hidden bg-slate-950 text-white sm:-mx-6">
+    <section className={clsx("battle-arena -mx-4 -my-8 min-h-[calc(100vh-80px)] overflow-hidden bg-slate-950 text-white sm:-mx-6", visuals.arenaClass)}>
       <div className="relative min-h-[calc(100vh-80px)] bg-[radial-gradient(circle_at_center,#39152f_0%,#111827_48%,#030712_100%)] px-4 py-4">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,rgba(244,63,94,.22),transparent_30%,rgba(59,130,246,.14)_65%,transparent)]" aria-hidden />
         <div className="relative z-10 grid min-h-[calc(100vh-112px)] gap-4 xl:grid-cols-[280px_1fr_260px]">
-          <InfoPanel selected={selected} ownerName={selectedOwner?.displayName} currentTurn={state.turn} />
+          <InfoPanel selected={selected} ownerName={selectedOwner?.displayName} currentTurn={state.turn} visuals={visuals} />
 
           <main className="grid min-h-0 grid-rows-[auto_1fr_auto] gap-3">
-            <TopStrip player={playerTwo} handFaceUp={state.activePlayerId === playerTwo.playerId} selectedId={selectedId} currentTurn={state.turn} onChoose={chooseCard} />
-            <BoardRow player={playerTwo} selectedId={selectedId} currentTurn={state.turn} onChoose={chooseCard} />
+            <TopStrip player={playerTwo} handFaceUp={state.activePlayerId === playerTwo.playerId} selectedId={selectedId} currentTurn={state.turn} visuals={visuals} onChoose={chooseCard} />
+            <BoardRow player={playerTwo} selectedId={selectedId} currentTurn={state.turn} visuals={visuals} onChoose={chooseCard} />
 
             <section className="grid place-items-center">
-              <div className="w-full max-w-2xl rounded-lg border border-rose-500/40 bg-black/45 px-5 py-4 text-center shadow-2xl shadow-rose-950/40">
+              <div className={clsx("w-full max-w-2xl rounded-lg border border-rose-500/40 bg-black/45 px-5 py-4 text-center shadow-2xl shadow-rose-950/40", visuals.bannerClass)}>
                 <div className="text-2xl font-black uppercase">{state.phase === "FINISHED" ? `${winner?.displayName ?? "Nobody"} Wins` : `${active.displayName}'s Turn`}</div>
                 <div className="mt-1 text-sm font-bold text-slate-300">Turn {state.turn}</div>
                 <div className="mt-3 min-h-6 text-sm font-semibold text-amber-100">
@@ -294,14 +296,14 @@ export function BattleBoard() {
               </div>
             </section>
 
-            <BoardRow player={playerOne} selectedId={selectedId} currentTurn={state.turn} onChoose={chooseCard} />
+            <BoardRow player={playerOne} selectedId={selectedId} currentTurn={state.turn} visuals={visuals} onChoose={chooseCard} />
             <section className="flex items-center justify-between gap-3">
-              <PlayerBadge player={playerOne} selected={selectedId === playerOne.leader.instanceId} currentTurn={state.turn} onChoose={chooseCard} />
+              <PlayerBadge player={playerOne} selected={selectedId === playerOne.leader.instanceId} currentTurn={state.turn} visuals={visuals} onChoose={chooseCard} />
               <div className="hidden text-right text-xs font-bold uppercase tracking-widest text-slate-400 sm:block">
                 {state.activePlayerId === playerOne.playerId ? "Your hand" : "Waiting for Player 2"}
               </div>
             </section>
-            <HandRow player={playerOne} faceUp={state.activePlayerId === playerOne.playerId} selectedId={selectedId} currentTurn={state.turn} onChoose={chooseCard} />
+            <HandRow player={playerOne} faceUp={state.activePlayerId === playerOne.playerId} selectedId={selectedId} currentTurn={state.turn} visuals={visuals} onChoose={chooseCard} />
           </main>
 
           <ControlPanel
@@ -319,6 +321,7 @@ export function BattleBoard() {
             activatedAbilities={activatedAbilities}
             mode={mode}
             deckSource={deckSource}
+            visuals={visuals}
             onPlay={playSelected}
             onAttack={beginAttack}
             onAbility={beginAbility}
@@ -336,14 +339,14 @@ export function BattleBoard() {
   );
 }
 
-function InfoPanel({ selected, ownerName, currentTurn }: { selected?: CardInstance; ownerName?: string; currentTurn: number }) {
+function InfoPanel({ selected, ownerName, currentTurn, visuals }: { selected?: CardInstance; ownerName?: string; currentTurn: number; visuals: ReturnType<typeof useBattleVisuals> }) {
   return (
     <aside className="space-y-4">
       <section className="rounded-lg border border-white/10 bg-black/45 p-4 shadow-2xl backdrop-blur">
         <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">Selected Card</h2>
         {selected ? (
           <div className="mt-4">
-            <BattleCard card={selected} size="large" currentTurn={currentTurn} />
+            <BattleCard card={selected} size="large" currentTurn={currentTurn} visuals={visuals} />
             <div className="mt-4 text-sm">
               <div className="font-black">{ownerName}</div>
               <p className="mt-2 text-slate-300">{selected.template.description || "No description yet."}</p>
@@ -366,22 +369,22 @@ function InfoPanel({ selected, ownerName, currentTurn }: { selected?: CardInstan
   );
 }
 
-function TopStrip({ player, handFaceUp, selectedId, currentTurn, onChoose }: { player: MatchPlayerState; handFaceUp: boolean; selectedId: string; currentTurn: number; onChoose: (card: CardInstance) => void }) {
+function TopStrip({ player, handFaceUp, selectedId, currentTurn, visuals, onChoose }: { player: MatchPlayerState; handFaceUp: boolean; selectedId: string; currentTurn: number; visuals: ReturnType<typeof useBattleVisuals>; onChoose: (card: CardInstance) => void }) {
   return (
     <section className="flex items-start justify-between gap-4 overflow-hidden">
-      <PlayerBadge player={player} selected={selectedId === player.leader.instanceId} currentTurn={currentTurn} onChoose={onChoose} />
+      <PlayerBadge player={player} selected={selectedId === player.leader.instanceId} currentTurn={currentTurn} visuals={visuals} onChoose={onChoose} />
       <div className="min-w-0 flex-1">
-        <HandRow player={player} faceUp={handFaceUp} selectedId={selectedId} currentTurn={currentTurn} compact onChoose={onChoose} />
+        <HandRow player={player} faceUp={handFaceUp} selectedId={selectedId} currentTurn={currentTurn} compact visuals={visuals} onChoose={onChoose} />
       </div>
     </section>
   );
 }
 
-function BoardRow({ player, selectedId, currentTurn, onChoose }: { player: MatchPlayerState; selectedId: string; currentTurn: number; onChoose: (card: CardInstance) => void }) {
+function BoardRow({ player, selectedId, currentTurn, visuals, onChoose }: { player: MatchPlayerState; selectedId: string; currentTurn: number; visuals: ReturnType<typeof useBattleVisuals>; onChoose: (card: CardInstance) => void }) {
   const emptySlots = Math.max(0, minimumBoardSlots.length - player.board.length);
   const usedSize = getUsedBoardSize(player);
   return (
-    <section className="rounded-lg border border-white/10 bg-black/25 p-3 shadow-inner">
+    <section className="battle-zone rounded-lg border border-white/10 bg-black/25 p-3 shadow-inner">
       <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-widest text-slate-400">
         <span>{player.displayName} Board</span>
         <span>Size {usedSize}/{maxBoardSize}</span>
@@ -389,7 +392,7 @@ function BoardRow({ player, selectedId, currentTurn, onChoose }: { player: Match
       <div className="grid gap-3 md:grid-cols-5">
         {player.board.map((card) => (
           <button key={card.instanceId} type="button" onClick={() => onChoose(card)} className="text-left">
-            <BattleCard card={card} selected={selectedId === card.instanceId} currentTurn={currentTurn} />
+            <BattleCard card={card} selected={selectedId === card.instanceId} currentTurn={currentTurn} visuals={visuals} />
           </button>
         ))}
         {Array.from({ length: emptySlots }).map((_, slot) => (
@@ -402,13 +405,13 @@ function BoardRow({ player, selectedId, currentTurn, onChoose }: { player: Match
   );
 }
 
-function HandRow({ player, faceUp, selectedId, currentTurn, compact, onChoose }: { player: MatchPlayerState; faceUp: boolean; selectedId: string; currentTurn: number; compact?: boolean; onChoose: (card: CardInstance) => void }) {
+function HandRow({ player, faceUp, selectedId, currentTurn, compact, visuals, onChoose }: { player: MatchPlayerState; faceUp: boolean; selectedId: string; currentTurn: number; compact?: boolean; visuals: ReturnType<typeof useBattleVisuals>; onChoose: (card: CardInstance) => void }) {
   const cards = player.hand;
   return (
     <section className={clsx("flex gap-3 overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-3", compact ? "min-h-36" : "min-h-52")}>
       {cards.length ? cards.map((card, index) => faceUp ? (
         <button key={card.instanceId} type="button" onClick={() => onChoose(card)} className="w-36 shrink-0 text-left transition hover:-translate-y-2">
-          <BattleCard card={card} selected={selectedId === card.instanceId} currentTurn={currentTurn} />
+          <BattleCard card={card} selected={selectedId === card.instanceId} currentTurn={currentTurn} visuals={visuals} />
         </button>
       ) : <CardBack key={`${player.playerId}-back-${index}`} />) : <div className="grid flex-1 place-items-center text-sm font-bold text-slate-500">No cards in hand</div>}
     </section>
@@ -430,6 +433,7 @@ function ControlPanel({
   activatedAbilities,
   mode,
   deckSource,
+  visuals,
   onPlay,
   onAttack,
   onAbility,
@@ -451,6 +455,7 @@ function ControlPanel({
   activatedAbilities: AbilityDefinition[];
   mode: BattleMode;
   deckSource: string;
+  visuals: ReturnType<typeof useBattleVisuals>;
   onPlay: () => void;
   onAttack: () => void;
   onAbility: (ability: AbilityDefinition) => void;
@@ -459,7 +464,7 @@ function ControlPanel({
   onRestart: () => void;
 }) {
   return (
-    <aside className="space-y-4">
+    <aside className={clsx("space-y-4", visuals.controlsClass)}>
       <section className="rounded-lg border border-white/10 bg-black/45 p-4 backdrop-blur">
         <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">Player 2</h2>
         <Counter label="Energy" value={playerTwo.energyCurrent} suffix={`/${playerTwo.energyMax}`} icon={<Sparkles className="h-4 w-4" />} />
@@ -529,11 +534,11 @@ function ControlPanel({
   );
 }
 
-function PlayerBadge({ player, selected, currentTurn, onChoose }: { player: MatchPlayerState; selected: boolean; currentTurn: number; onChoose: (card: CardInstance) => void }) {
+function PlayerBadge({ player, selected, currentTurn, visuals, onChoose }: { player: MatchPlayerState; selected: boolean; currentTurn: number; visuals: ReturnType<typeof useBattleVisuals>; onChoose: (card: CardInstance) => void }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/45 p-3 shadow-xl backdrop-blur">
       <button type="button" onClick={() => onChoose(player.leader)} className="text-left">
-        <BattleCard card={player.leader} selected={selected} currentTurn={currentTurn} size="badge" />
+        <BattleCard card={player.leader} selected={selected} currentTurn={currentTurn} size="badge" visuals={visuals} />
       </button>
       <div>
         <div className="text-lg font-black">{player.displayName}</div>
@@ -547,18 +552,20 @@ function PlayerBadge({ player, selected, currentTurn, onChoose }: { player: Matc
   );
 }
 
-function BattleCard({ card, selected, currentTurn, size = "normal" }: { card: CardInstance; selected?: boolean; currentTurn: number; size?: "normal" | "large" | "badge" }) {
+function BattleCard({ card, selected, currentTurn, visuals, size = "normal" }: { card: CardInstance; selected?: boolean; currentTurn: number; visuals: ReturnType<typeof useBattleVisuals>; size?: "normal" | "large" | "badge" }) {
   const isLarge = size === "large";
   const isBadge = size === "badge";
   const stunned = (card.stunnedUntilTurn ?? 0) >= currentTurn;
   const blinded = (card.blindedUntilTurn ?? 0) >= currentTurn;
   const disabled = card.exhausted || stunned || blinded;
   const imageUrl = resolveCardImageUrl(card.template.imageUrl);
+  const floaters = visuals.floatersForCard(card.instanceId);
   return (
     <article
       className={clsx(
-        "battle-card relative overflow-hidden rounded-lg border-2 bg-gradient-to-br shadow-xl transition",
+        "battle-card battle-card-visual relative overflow-hidden rounded-lg border-2 bg-gradient-to-br shadow-xl transition",
         getRarityTheme(card.template.rarity).card,
+        visuals.classForCard(card.instanceId),
         selected && "ring-2 ring-amber-300",
         disabled && "opacity-75",
         isLarge ? "min-h-80" : isBadge ? "h-24 w-20" : "min-h-44",
@@ -590,7 +597,21 @@ function BattleCard({ card, selected, currentTurn, size = "normal" }: { card: Ca
           </div>
         </div>
       ) : null}
+      <FloatingText items={floaters} />
     </article>
+  );
+}
+
+function FloatingText({ items }: { items: Array<{ id: string; label: string; tone: string }> }) {
+  if (!items.length) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20">
+      {items.slice(-3).map((item, index) => (
+        <span key={item.id} className={clsx("battle-float-text", `battle-float-${item.tone}`)} style={{ left: `${46 + index * 9}%`, top: `${14 + index * 12}%` }}>
+          {item.label}
+        </span>
+      ))}
+    </div>
   );
 }
 

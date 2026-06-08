@@ -1,6 +1,6 @@
 import { dealDamage, drawCards, findCard, getAbilityConditionError, getAbilityCooldownRemaining, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
 import type { CardTemplate } from "@/types/cards";
-import type { CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
+import type { BattleVisualEvent, CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
 
 const MAX_BOARD_SIZE = 30;
 const MAX_ENERGY = 10;
@@ -57,6 +57,22 @@ export function createMatchState(
       id: "start-match",
       type: "TURN",
       message: `${startingPlayer.displayName} starts the match.`,
+      visualEvents: [
+        {
+          id: "start-match-turn",
+          type: "TURN",
+          playerId: startingPlayer.playerId,
+          targetInstanceId: startingPlayer.leader.instanceId,
+          message: `${startingPlayer.displayName} starts the match.`,
+        },
+        {
+          id: "start-match-energy",
+          type: "ENERGY",
+          playerId: startingPlayer.playerId,
+          amount: STARTING_ENERGY,
+          message: `${startingPlayer.displayName} starts with ${STARTING_ENERGY} energy.`,
+        },
+      ],
     },
   };
 }
@@ -125,8 +141,17 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
   const validation = validateAction(state, action);
   if (!validation.ok) throw new Error(validation.reason);
 
+  const beforeVisual = snapshotBattleCards(state);
+  const actionOrdinal = state.actionLog.length + 1;
   let nextState = structuredClone(state);
   const messages: string[] = [];
+  const visualEvents: BattleVisualEvent[] = [];
+  const addVisual = (event: Omit<BattleVisualEvent, "id">) => {
+    visualEvents.push({
+      ...event,
+      id: `${state.id}-${state.turn}-${actionOrdinal}-${visualEvents.length}-${event.type}`,
+    });
+  };
 
   if (action.type === "END_TURN") {
     const current = getPlayer(nextState, action.playerId);
@@ -148,22 +173,46 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
     opponent.energyMax = getEnergyForPlayerTurn(nextState, opponent);
     opponent.energyCurrent = opponent.energyMax;
     opponent.playedCardsThisTurn = 0;
+    addVisual({
+      type: "TURN",
+      playerId: opponent.playerId,
+      targetInstanceId: opponent.leader.instanceId,
+      message: `${opponent.displayName}'s turn started.`,
+    });
+    addVisual({
+      type: "ENERGY",
+      playerId: opponent.playerId,
+      amount: opponent.energyCurrent,
+      message: `${opponent.displayName} refreshed to ${opponent.energyCurrent} energy.`,
+    });
     const shouldSkipDraw = !opponent.skippedOpeningDraw && opponent.playerId === nextState.firstPlayerId;
     if (shouldSkipDraw) {
       opponent.skippedOpeningDraw = true;
       messages.push(`${opponent.displayName} skipped the first draw.`);
+      addVisual({ type: "ERROR", playerId: opponent.playerId, message: `${opponent.displayName} skipped the first draw.` });
     } else if (opponent.hand.length >= MAX_HAND_SIZE) {
       messages.push(`${opponent.displayName} already has ${MAX_HAND_SIZE} cards and did not draw.`);
+      addVisual({ type: "ERROR", playerId: opponent.playerId, message: `${opponent.displayName} already has ${MAX_HAND_SIZE} cards.` });
     } else {
       const recycledBeforeDraw = opponent.deck.length === 0 && opponent.graveyard.length > 0;
+      const handBeforeDraw = opponent.hand.length;
       const drawn = drawCards(opponent, 1);
       if (recycledBeforeDraw) {
         messages.push(`${opponent.displayName}'s graveyard looped back into the deck.`);
+        addVisual({ type: "STATUS", playerId: opponent.playerId, label: "Deck loop", message: `${opponent.displayName}'s graveyard looped back into the deck.` });
       }
       if (drawn === 0) {
         messages.push(`${opponent.displayName} had no cards to draw.`);
+        addVisual({ type: "ERROR", playerId: opponent.playerId, message: `${opponent.displayName} had no cards to draw.` });
       } else {
         messages.push(`${opponent.displayName} drew a card.`);
+        addVisual({
+          type: "DRAW",
+          playerId: opponent.playerId,
+          targetInstanceId: opponent.hand[handBeforeDraw]?.instanceId,
+          amount: drawn,
+          message: `${opponent.displayName} drew a card.`,
+        });
       }
     }
     opponent.board.forEach((card) => {
@@ -210,13 +259,36 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
       target.currentAura += auraBuff;
       if (comboMultiplier > 1) {
         messages.push(`Combo! ${card.template.name} gave ${target.template.name} ${comboMultiplier}x buffs.`);
+        addVisual({
+          type: "COMBO",
+          playerId: player.playerId,
+          sourceInstanceId: card.instanceId,
+          targetInstanceId: target.instanceId,
+          amount: comboMultiplier,
+          label: `${comboMultiplier}x`,
+          message: `Combo! ${card.template.name} gave ${target.template.name} ${comboMultiplier}x buffs.`,
+        });
       }
       messages.push(`${card.template.name} equipped ${target.template.name}.`);
+      addVisual({
+        type: "ITEM_ATTACH",
+        playerId: player.playerId,
+        sourceInstanceId: card.instanceId,
+        targetInstanceId: target.instanceId,
+        message: `${card.template.name} equipped ${target.template.name}.`,
+      });
     } else {
       card.zone = "BOARD";
       card.enteredTurn = nextState.turn;
       card.exhausted = true;
       player.board.push(card);
+      addVisual({
+        type: "PLAY",
+        playerId: player.playerId,
+        sourceInstanceId: card.instanceId,
+        targetInstanceId: card.instanceId,
+        message: `${player.displayName} played ${card.template.name}.`,
+      });
       if (card.currentHealth <= 0) {
         messages.push(`${card.template.name} has 0 HP and immediately went to the graveyard.`);
       }
@@ -246,6 +318,14 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
     player.energyCurrent -= ATTACK_ENERGY_COST;
     attacker.exhausted = true;
     messages.push(`${attacker.template.name} attacked ${target.template.name}.`);
+    addVisual({
+      type: "ATTACK",
+      playerId: player.playerId,
+      sourceInstanceId: attacker.instanceId,
+      targetInstanceId: target.instanceId,
+      amount: attacker.currentAttack,
+      message: `${attacker.template.name} attacked ${target.template.name}.`,
+    });
     messages.push(...dealDamage(target, attacker.currentAttack, attacker.template.name));
     if (attacker.currentAttack > 0) {
       const onDamage = resolveTriggeredAbilities(nextState, { trigger: "ON_DAMAGE", source: attacker, controllerId: attacker.ownerId, targetInstanceId: target.instanceId });
@@ -288,6 +368,14 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
   if (action.type === "USE_ABILITY") {
     const source = findCard(nextState, action.sourceInstanceId)!;
     const ability = source.template.abilityData.find((entry) => entry.id === action.abilityId)!;
+    addVisual({
+      type: "ABILITY",
+      playerId: action.playerId,
+      sourceInstanceId: source.instanceId,
+      targetInstanceId: action.targetInstanceId,
+      label: ability.label,
+      message: `${source.template.name} used ${ability.label}.`,
+    });
     const resolved = resolveTriggeredAbilities(nextState, {
       trigger: "ACTIVATED",
       source,
@@ -304,6 +392,17 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
   if (nextState.phase === "FINISHED") {
     const winner = nextState.players.find((player) => player.playerId === nextState.winnerId);
     messages.unshift(nextState.draw ? "Draw. Both leaders hit 0 HP." : `${winner?.displayName ?? "A player"} wins. The enemy leader hit 0 HP.`);
+    addVisual({
+      type: "VICTORY",
+      playerId: winner?.playerId,
+      targetInstanceId: winner?.leader.instanceId,
+      label: nextState.draw ? "Draw" : "Victory",
+      message: nextState.draw ? "Both leaders fell." : `${winner?.displayName ?? "A player"} wins.`,
+    });
+  }
+
+  for (const event of buildStateDiffVisualEvents(beforeVisual, nextState)) {
+    addVisual(event);
   }
 
   nextState.actionLog.push(action);
@@ -314,8 +413,130 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
     sourceInstanceId: "cardInstanceId" in action ? action.cardInstanceId : "attackerInstanceId" in action ? action.attackerInstanceId : "sourceInstanceId" in action ? action.sourceInstanceId : undefined,
     targetInstanceId: "targetInstanceId" in action ? action.targetInstanceId : undefined,
     message: messages[0] ?? "Action resolved.",
+    visualEvents,
   };
   return nextState;
+}
+
+type BattleCardSnapshot = {
+  ownerId: string;
+  zone: CardInstance["zone"];
+  attack: number;
+  health: number;
+  maxHealth: number;
+  aura: number;
+  shielded: boolean;
+  poisoned: boolean;
+  stunnedUntilTurn?: number;
+  blindedUntilTurn?: number;
+  burnedUntilTurn?: number;
+  isLeader: boolean;
+};
+
+function snapshotBattleCards(state: MatchState) {
+  const snapshots = new Map<string, BattleCardSnapshot>();
+  const visit = (card: CardInstance, isLeader = false) => {
+    snapshots.set(card.instanceId, {
+      ownerId: card.ownerId,
+      zone: card.zone,
+      attack: card.currentAttack,
+      health: card.currentHealth,
+      maxHealth: card.currentMaxHealth,
+      aura: card.currentAura,
+      shielded: card.shielded,
+      poisoned: Boolean(card.poisoned),
+      stunnedUntilTurn: card.stunnedUntilTurn,
+      blindedUntilTurn: card.blindedUntilTurn,
+      burnedUntilTurn: card.burnedUntilTurn,
+      isLeader,
+    });
+    card.attachedItems.forEach((item) => visit(item));
+  };
+
+  for (const player of state.players) {
+    visit(player.leader, true);
+    [...player.deck, ...player.hand, ...player.board, ...player.graveyard].forEach((card) => visit(card));
+  }
+  return snapshots;
+}
+
+function buildStateDiffVisualEvents(before: Map<string, BattleCardSnapshot>, state: MatchState): Array<Omit<BattleVisualEvent, "id">> {
+  const after = snapshotBattleCards(state);
+  const events: Array<Omit<BattleVisualEvent, "id">> = [];
+
+  for (const [instanceId, previous] of before) {
+    const current = after.get(instanceId);
+    if (!current) continue;
+
+    if (current.health < previous.health) {
+      events.push({
+        type: "DAMAGE",
+        playerId: current.ownerId,
+        targetInstanceId: instanceId,
+        amount: previous.health - current.health,
+        message: `${previous.health - current.health} damage.`,
+      });
+    }
+    if (current.health > previous.health) {
+      events.push({
+        type: "HEAL",
+        playerId: current.ownerId,
+        targetInstanceId: instanceId,
+        amount: current.health - previous.health,
+        message: `${current.health - previous.health} healed.`,
+      });
+    }
+    if (current.attack > previous.attack) {
+      events.push({
+        type: "BUFF",
+        playerId: current.ownerId,
+        targetInstanceId: instanceId,
+        amount: current.attack - previous.attack,
+        label: "ATK",
+      });
+    }
+    if (current.maxHealth > previous.maxHealth && current.health >= previous.health) {
+      events.push({
+        type: "BUFF",
+        playerId: current.ownerId,
+        targetInstanceId: instanceId,
+        amount: current.maxHealth - previous.maxHealth,
+        label: "HP",
+      });
+    }
+    if (current.aura > previous.aura) {
+      events.push({
+        type: "BUFF",
+        playerId: current.ownerId,
+        targetInstanceId: instanceId,
+        amount: current.aura - previous.aura,
+        label: "AUR",
+      });
+    }
+    if (!previous.shielded && current.shielded) {
+      events.push({ type: "STATUS", playerId: current.ownerId, targetInstanceId: instanceId, label: "Shield" });
+    }
+    if (!previous.poisoned && current.poisoned) {
+      events.push({ type: "STATUS", playerId: current.ownerId, targetInstanceId: instanceId, label: "Poison" });
+    }
+    if ((current.stunnedUntilTurn ?? 0) > (previous.stunnedUntilTurn ?? 0)) {
+      events.push({ type: "STATUS", playerId: current.ownerId, targetInstanceId: instanceId, label: "Stun" });
+    }
+    if ((current.blindedUntilTurn ?? 0) > (previous.blindedUntilTurn ?? 0)) {
+      events.push({ type: "STATUS", playerId: current.ownerId, targetInstanceId: instanceId, label: "Blind" });
+    }
+    if ((current.burnedUntilTurn ?? 0) > (previous.burnedUntilTurn ?? 0)) {
+      events.push({ type: "STATUS", playerId: current.ownerId, targetInstanceId: instanceId, label: "Burn" });
+    }
+    if (previous.zone !== "GRAVEYARD" && current.zone === "GRAVEYARD") {
+      events.push({ type: "DEATH", playerId: current.ownerId, targetInstanceId: instanceId, label: "KO" });
+    }
+    if (previous.isLeader && previous.health > 0 && current.health <= 0) {
+      events.push({ type: "DEATH", playerId: current.ownerId, targetInstanceId: instanceId, label: "Leader down" });
+    }
+  }
+
+  return events;
 }
 
 function createPlayerState(

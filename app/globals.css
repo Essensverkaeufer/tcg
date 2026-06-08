@@ -263,3 +263,722 @@ a {
 .gacha-featured-hit {
   animation: gacha-featured-hit 620ms ease-in-out both;
 }
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter,
+.surface-pop,
+.story-chapter-enter {
+  animation: page-enter 420ms ease-out both;
+}
+
+@keyframes app-header-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-header-enter {
+  animation: app-header-enter 360ms ease-out both;
+}
+
+.brand-pulse svg {
+  filter: drop-shadow(0 0 0 rgba(225, 29, 72, 0));
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+.brand-pulse:hover svg {
+  filter: drop-shadow(0 0 10px rgba(225, 29, 72, 0.42));
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.animated-nav-link {
+  position: relative;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.animated-nav-link:hover {
+  transform: translateY(-1px);
+}
+
+.animated-nav-link::after {
+  background: currentColor;
+  border-radius: 999px;
+  bottom: 3px;
+  content: "";
+  height: 2px;
+  left: 10px;
+  opacity: 0;
+  position: absolute;
+  right: 10px;
+  transform: scaleX(0.25);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.animated-nav-link-active::after,
+.animated-nav-link:hover::after {
+  opacity: 0.7;
+  transform: scaleX(1);
+}
+
+.music-control,
+.theme-toggle,
+.skip-button,
+.coin-counter {
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.music-control:hover,
+.theme-toggle:hover,
+.skip-button:hover,
+.coin-counter:hover {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.music-slider:active {
+  filter: drop-shadow(0 0 8px rgba(225, 29, 72, 0.45));
+}
+
+.theme-toggle-spin svg,
+.skip-button svg {
+  transition: transform 220ms ease;
+}
+
+.theme-toggle-spin:active svg,
+.skip-button:active svg {
+  transform: rotate(160deg) scale(1.05);
+}
+
+@keyframes stat-pop {
+  0% {
+    transform: scale(0.96);
+  }
+  55% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.dashboard-stat-count,
+.version-pulse,
+.owned-badge-bump,
+.deck-count-bump,
+.coin-counter {
+  animation: stat-pop 460ms ease-out both;
+}
+
+.interactive-card {
+  position: relative;
+  transition: filter 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.interactive-card:hover {
+  filter: saturate(1.12);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+}
+
+.card-image-zoom {
+  transition: filter 180ms ease, transform 220ms ease;
+}
+
+.interactive-card:hover .card-image-zoom {
+  filter: saturate(1.18) contrast(1.04);
+  transform: scale(1.025);
+}
+
+.foil-hover {
+  overflow: hidden;
+}
+
+.foil-hover::before,
+.gacha-banner-shimmer::before,
+.pack-shop-card::before {
+  background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.34) 45%, transparent 70%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-130%);
+  transition: transform 520ms ease;
+  z-index: 1;
+}
+
+.foil-hover:hover::before,
+.gacha-banner-shimmer:hover::before,
+.pack-shop-card:hover::before {
+  transform: translateX(130%);
+}
+
+.animated-grid {
+  transition: opacity 220ms ease;
+}
+
+@keyframes stagger-card {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.stagger-card,
+.history-row-slide,
+.deck-row-pop,
+.pull-row-pop {
+  animation: stagger-card 420ms ease-out both;
+}
+
+@keyframes soft-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+.soft-shake,
+.insufficient-shake:disabled {
+  animation: soft-shake 320ms ease-in-out both;
+}
+
+@keyframes soft-shimmer {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 rgba(148, 163, 184, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 42px rgba(148, 163, 184, 0.16);
+  }
+}
+
+.soft-shimmer {
+  animation: soft-shimmer 1800ms ease-in-out infinite;
+}
+
+.toast-slide,
+.preview-crossfade,
+.avatar-crossfade {
+  animation: page-enter 320ms ease-out both;
+}
+
+.save-button-glow:not(:disabled),
+.valid-deck-glow,
+.next-encounter-glow {
+  box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.save-button-glow:not(:disabled):hover,
+.next-encounter-glow:hover {
+  box-shadow: 0 0 26px rgba(16, 185, 129, 0.22);
+  transform: translateY(-1px);
+}
+
+.bump-action:active,
+.pack-buy-burst:active,
+.gacha-pull-button:active {
+  animation: stat-pop 220ms ease-out both;
+}
+
+.approve-stamp:active {
+  animation: stat-pop 260ms ease-out both;
+}
+
+.deny-stamp:active {
+  animation: soft-shake 260ms ease-out both;
+}
+
+.pack-shop-card,
+.gacha-banner-shimmer {
+  overflow: hidden;
+  position: relative;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.pack-shop-card:hover,
+.gacha-banner-shimmer:hover {
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+  transform: translateY(-4px);
+}
+
+@keyframes pack-icon-burst {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04) rotate(1deg);
+  }
+}
+
+.pack-shop-card:hover .pack-icon-burst {
+  animation: pack-icon-burst 560ms ease-out both;
+}
+
+.reroll-spin svg {
+  transition: transform 220ms ease;
+}
+
+.reroll-spin:active svg {
+  transform: rotate(190deg);
+}
+
+.rarity-hit-glow.rare-hit {
+  filter: drop-shadow(0 0 26px rgba(251, 191, 36, 0.38));
+}
+
+.pity-tick {
+  transition: width 420ms cubic-bezier(0.2, 0.9, 0.2, 1), filter 180ms ease;
+}
+
+.pity-tick:hover {
+  filter: brightness(1.16);
+}
+
+@keyframes story-line-draw {
+  from {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.story-path-line {
+  animation: story-line-draw 760ms ease-out both;
+}
+
+.story-node {
+  transition: box-shadow 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.story-node:hover {
+  filter: saturate(1.12);
+  transform: translateY(-3px);
+}
+
+.story-node-current {
+  animation: stat-pop 520ms ease-out both;
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.18);
+}
+
+.story-node-completed svg {
+  animation: stat-pop 420ms ease-out both;
+}
+
+@keyframes quiet-pulse {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.story-node-locked svg {
+  animation: quiet-pulse 1600ms ease-in-out infinite;
+}
+
+.story-node-boss {
+  box-shadow: 0 0 34px rgba(244, 63, 94, 0.2);
+}
+
+.story-node-tom {
+  animation: tom-gate-pulse 1800ms ease-in-out infinite;
+}
+
+@keyframes tom-gate-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 22px rgba(127, 29, 29, 0.2), 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    box-shadow: 0 0 38px rgba(127, 29, 29, 0.34), 0 0 22px rgba(251, 191, 36, 0.18);
+  }
+}
+
+.battle-zone.active-zone {
+  animation: active-zone-pulse 1300ms ease-in-out infinite;
+}
+
+@keyframes active-zone-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(251, 191, 36, 0.18);
+  }
+}
+
+.battle-banner-turn {
+  animation: battle-banner-turn 520ms ease-out both;
+}
+
+@keyframes battle-banner-turn {
+  from {
+    opacity: 0.65;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.battle-controls-energy {
+  animation: energy-glow 620ms ease-out both;
+}
+
+@keyframes energy-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+  }
+}
+
+.online-waiting,
+.queue-pulse {
+  animation: quiet-pulse 1100ms ease-in-out infinite;
+}
+
+.bot-thinking {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.bot-thinking span {
+  animation: bot-dot 900ms ease-in-out infinite;
+  background: rgb(252 211 77);
+  border-radius: 999px;
+  height: 7px;
+  width: 7px;
+}
+
+.bot-thinking span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.bot-thinking span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+@keyframes bot-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+.reward-flip {
+  animation: reward-flip 520ms ease-out both;
+}
+
+@keyframes reward-flip {
+  from {
+    opacity: 0;
+    transform: rotateX(-70deg) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0) scale(1);
+  }
+}
+
+.battle-card-visual {
+  transition: filter 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  will-change: transform;
+}
+
+.battle-anim-play {
+  animation: battle-card-play 560ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes battle-card-play {
+  0% {
+    opacity: 0.35;
+    transform: translateY(26px) scale(0.88);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.battle-anim-equip {
+  animation: battle-equip 520ms ease-out both;
+}
+
+@keyframes battle-equip {
+  0% {
+    filter: brightness(1);
+  }
+  45% {
+    filter: brightness(1.45) drop-shadow(0 0 22px rgba(16, 185, 129, 0.55));
+    transform: scale(1.04);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+.battle-anim-combo {
+  animation: battle-combo 720ms ease-out both;
+}
+
+@keyframes battle-combo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+  }
+  45% {
+    box-shadow: 0 0 34px rgba(251, 191, 36, 0.42);
+    transform: scale(1.05) rotate(1deg);
+  }
+}
+
+.battle-anim-attack {
+  animation: battle-attack 420ms ease-out both;
+}
+
+@keyframes battle-attack {
+  0%,
+  100% {
+    transform: translateX(0) scale(1);
+  }
+  45% {
+    transform: translateX(12px) scale(1.04);
+  }
+}
+
+.battle-anim-damage {
+  animation: battle-damage 420ms ease-out both;
+}
+
+@keyframes battle-damage {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: translateX(0);
+  }
+  20% {
+    filter: brightness(1.4) saturate(1.4);
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  65% {
+    transform: translateX(-2px);
+  }
+}
+
+.battle-anim-heal {
+  animation: battle-heal 560ms ease-out both;
+}
+
+@keyframes battle-heal {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(34, 197, 94, 0.34);
+    filter: brightness(1.18);
+  }
+}
+
+.battle-anim-buff {
+  animation: battle-buff 520ms ease-out both;
+}
+
+@keyframes battle-buff {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.25);
+    transform: scale(1.045);
+  }
+}
+
+.battle-anim-status {
+  animation: battle-status 580ms ease-out both;
+}
+
+@keyframes battle-status {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(168, 85, 247, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 0 3px rgba(168, 85, 247, 0.45), 0 0 24px rgba(168, 85, 247, 0.28);
+  }
+}
+
+.battle-anim-ability {
+  animation: battle-ability 620ms ease-out both;
+}
+
+@keyframes battle-ability {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  40% {
+    filter: brightness(1.45) drop-shadow(0 0 26px rgba(168, 85, 247, 0.42));
+    transform: scale(1.035);
+  }
+}
+
+.battle-anim-death {
+  animation: battle-death 860ms ease-in both;
+}
+
+@keyframes battle-death {
+  0% {
+    filter: grayscale(0);
+    opacity: 1;
+    transform: scale(1);
+  }
+  55% {
+    filter: grayscale(0.8) brightness(0.75);
+    opacity: 0.72;
+    transform: scale(0.96) rotate(-1deg);
+  }
+  100% {
+    filter: grayscale(1) brightness(0.5);
+    opacity: 0.18;
+    transform: translateY(18px) scale(0.88) rotate(2deg);
+  }
+}
+
+.battle-anim-victory {
+  animation: battle-victory 900ms ease-out both;
+}
+
+.battle-arena-victory {
+  animation: arena-victory 900ms ease-out both;
+}
+
+@keyframes battle-victory {
+  50% {
+    filter: drop-shadow(0 0 32px rgba(251, 191, 36, 0.45));
+    transform: scale(1.05);
+  }
+}
+
+@keyframes arena-victory {
+  50% {
+    filter: saturate(1.18);
+  }
+}
+
+.battle-float-text {
+  animation: battle-float 860ms ease-out both;
+  font-size: 0.75rem;
+  font-weight: 900;
+  position: absolute;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.75);
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.battle-float-damage {
+  color: #fecdd3;
+}
+
+.battle-float-heal {
+  color: #bbf7d0;
+}
+
+.battle-float-buff {
+  color: #fde68a;
+}
+
+.battle-float-status {
+  color: #ddd6fe;
+}
+
+.battle-float-combo {
+  color: #fef3c7;
+}
+
+@keyframes battle-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.85);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -32px) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+
+  .battle-anim-attack,
+  .battle-anim-damage,
+  .soft-shake {
+    transform: none !important;
+  }
+}

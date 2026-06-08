@@ -48,7 +48,7 @@ export function PackShop() {
 
   return (
     <AuthGate>
-      <section className="space-y-5">
+      <section className="page-enter space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-3xl font-black">Pack Shop</h1>
@@ -59,13 +59,13 @@ export function PackShop() {
             {profile?.coins ?? 0}
           </span>
         </div>
-        {message ? <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{message}</div> : null}
-        <div className="grid gap-4 md:grid-cols-3">
+        {message ? <div className="soft-shake rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{message}</div> : null}
+        <div className="animated-grid grid gap-4 md:grid-cols-3">
           {packDefinitions.map((pack) => {
             const canAfford = (profile?.coins ?? 0) >= pack.priceCoins;
             return (
-              <article key={pack.slug} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <div className={clsx("mb-4 grid aspect-[4/3] place-items-center rounded-md border-2", accentStyles[pack.accent])}>
+              <article key={pack.slug} className="stagger-card pack-shop-card foil-hover rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className={clsx("pack-icon-burst mb-4 grid aspect-[4/3] place-items-center rounded-md border-2", accentStyles[pack.accent])}>
                   <Gift className="h-12 w-12" aria-hidden />
                 </div>
                 <div className="flex items-start justify-between gap-3">
@@ -92,7 +92,7 @@ export function PackShop() {
                         if (busyPack === pack.slug) window.location.href = `/api/packs/open-redirect?pack=${pack.slug}`;
                       }, 800);
                     }}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-800"
+                    className="pack-buy-burst mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white hover:bg-slate-800"
                   >
                     <Gift className="h-4 w-4" aria-hidden />
                     {busyPack === pack.slug ? "Opening..." : "Buy & Open"}

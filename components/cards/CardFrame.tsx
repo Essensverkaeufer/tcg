@@ -8,7 +8,7 @@ export function CardFrame({ card, href }: { card: CardTemplate; href?: string })
   const rarityTheme = getRarityTheme(card.rarity);
   const imageUrl = resolveCardImageUrl(card.imageUrl);
   const body = (
-    <article className={clsx("tcg-card-frame flex h-full min-h-80 flex-col rounded-lg border-2 bg-gradient-to-br p-3 text-[#0f172a] shadow-sm", rarityTheme.card)}>
+    <article className={clsx("tcg-card-frame interactive-card foil-hover flex h-full min-h-80 flex-col rounded-lg border-2 bg-gradient-to-br p-3 text-[#0f172a] shadow-sm", rarityTheme.card)}>
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <h3 className="text-base font-black leading-tight">{card.name}</h3>
@@ -17,7 +17,7 @@ export function CardFrame({ card, href }: { card: CardTemplate; href?: string })
         <span className="grid h-9 w-9 place-items-center rounded-full bg-slate-950 text-sm font-black text-white">A{card.aura}</span>
       </div>
       {imageUrl ? (
-        <img className="aspect-[4/3] w-full rounded-md border border-white/70 object-cover" src={imageUrl} alt={card.name} />
+        <img className="card-image-zoom aspect-[4/3] w-full rounded-md border border-white/70 object-cover" src={imageUrl} alt={card.name} />
       ) : (
         <div className="grid aspect-[4/3] place-items-center rounded-md border border-white/70 bg-white/50 text-center text-xs font-bold uppercase text-[#64748b]">
           {card.name}

@@ -163,11 +163,11 @@ export function DeckBuilderClient() {
 
   return (
     <AuthGate>
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_340px]">
+      <main className="page-enter mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_340px]">
         <section>
           <h1 className="text-3xl font-black">Deck Builder</h1>
           <p className="mt-2 text-slate-600">Build from owned cards. Save validates ownership and deck legality on the server.</p>
-          {loadError ? <div className="mt-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{loadError}</div> : null}
+          {loadError ? <div className="soft-shake mt-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{loadError}</div> : null}
           {loading ? <div className="mt-4 rounded-md border border-slate-200 bg-white p-3 text-sm font-bold text-slate-600">Loading deck builder...</div> : null}
           {savedDecks.length ? (
             <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
@@ -193,14 +193,14 @@ export function DeckBuilderClient() {
               <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
               Active
             </label>
-            <button type="button" onClick={() => void saveDeck()} disabled={saving} className="rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white disabled:bg-slate-300">
+            <button type="button" onClick={() => void saveDeck()} disabled={saving} className="save-button-glow rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white disabled:bg-slate-300">
               {saving ? "Saving..." : "Save Deck"}
             </button>
           </div>
           <button type="button" onClick={() => { setDeckId(""); setDeckName("My Deck"); setDeck({}); setIsActive(true); setMessage(""); }} className="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm font-black">
             New Deck
           </button>
-          {message ? <div className="mt-3 rounded-md bg-slate-100 p-3 text-sm font-bold text-slate-700">{message}</div> : null}
+          {message ? <div className="toast-slide mt-3 rounded-md bg-slate-100 p-3 text-sm font-bold text-slate-700">{message}</div> : null}
           <div className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-5">
             <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Search cards" value={search} onChange={(event) => setSearch(event.target.value)} />
             <select className="rounded-md border border-slate-300 px-3 py-2" value={rarity} onChange={(event) => setRarity(event.target.value as Rarity | "ALL")}>
@@ -225,15 +225,15 @@ export function DeckBuilderClient() {
               <option value="desc">Descending</option>
             </select>
           </div>
-          <div className="mt-8 grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
-            {visibleOwnedCards.map((owned) => (
-              <div key={owned.id} className="rounded-lg border border-slate-200 bg-white p-3 transition duration-200 hover:-translate-y-1">
+          <div className="animated-grid mt-8 grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
+            {visibleOwnedCards.map((owned, index) => (
+              <div key={owned.id} className="stagger-card rounded-lg border border-slate-200 bg-white p-3 transition duration-200 hover:-translate-y-1" style={{ animationDelay: `${Math.min(index, 16) * 42}ms` }}>
                 <CardFrame card={owned.card} />
                 <div className="mt-3 flex items-center justify-between gap-2">
-                  <span className="text-sm font-black">Owned {owned.quantity} | Deck {deck[owned.id] ?? 0}</span>
+                  <span className="deck-count-bump text-sm font-black">Owned {owned.quantity} | Deck {deck[owned.id] ?? 0}</span>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => removeCard(owned.id)} className="h-8 w-8 rounded-md border border-slate-300 font-black">-</button>
-                    <button type="button" onClick={() => addCard(owned.id)} className="h-8 w-8 rounded-md bg-slate-950 font-black text-white">+</button>
+                    <button type="button" onClick={() => removeCard(owned.id)} className="bump-action h-8 w-8 rounded-md border border-slate-300 font-black">-</button>
+                    <button type="button" onClick={() => addCard(owned.id)} className="bump-action h-8 w-8 rounded-md bg-slate-950 font-black text-white">+</button>
                   </div>
                 </div>
               </div>
@@ -246,13 +246,13 @@ export function DeckBuilderClient() {
             <p className="mt-1 text-sm font-bold text-slate-600">{totalCards} cards, minimum 10</p>
             <div className="mt-4 space-y-2">
               {selectedCards.map((entry) => (
-                <div key={entry.card.slug} className="flex items-center justify-between rounded-md bg-slate-100 p-2 text-sm">
+                <div key={entry.card.slug} className="deck-row-pop flex items-center justify-between rounded-md bg-slate-100 p-2 text-sm">
                   <span className="font-bold">{entry.card.name}</span>
                   <span>x{entry.quantity}</span>
                 </div>
               ))}
             </div>
-            <div className={validation.valid ? "mt-4 rounded-md bg-emerald-50 p-3 text-sm font-bold text-emerald-700" : "mt-4 rounded-md bg-rose-50 p-3 text-sm font-bold text-rose-700"}>
+            <div className={validation.valid ? "valid-deck-glow mt-4 rounded-md bg-emerald-50 p-3 text-sm font-bold text-emerald-700" : "soft-shake mt-4 rounded-md bg-rose-50 p-3 text-sm font-bold text-rose-700"}>
               {validation.valid ? "Deck is legal." : validation.errors[0] ?? "Deck needs cards."}
             </div>
           </section>

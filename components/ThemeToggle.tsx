@@ -30,7 +30,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-      className="theme-toggle inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-black hover:bg-slate-100"
+      className="theme-toggle theme-toggle-spin inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-black hover:bg-slate-100"
     >
       {theme === "dark" ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
       {theme === "dark" ? "Light" : "Dark"}

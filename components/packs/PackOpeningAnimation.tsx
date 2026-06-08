@@ -45,7 +45,7 @@ export function PackOpeningAnimation({
   }
 
   return (
-    <section data-pack-opening-root className="overflow-hidden rounded-lg border border-slate-900 bg-slate-950 text-white shadow-2xl">
+    <section data-pack-opening-root className="page-enter overflow-hidden rounded-lg border border-slate-900 bg-slate-950 text-white shadow-2xl">
       <div className="relative min-h-[680px] p-4 sm:p-6">
         <div className={clsx("absolute inset-0 bg-gradient-to-br", stageGlow)} aria-hidden />
         <div className="absolute inset-0 pack-stage-grid opacity-50" aria-hidden />
@@ -96,7 +96,7 @@ export function PackOpeningAnimation({
                   onClick={onReroll}
                   data-testid="reroll-pack-button"
                   disabled={rerolling}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-amber-300 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/50"
+                  className="reroll-spin inline-flex w-full items-center justify-center gap-2 rounded-md bg-amber-300 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/50"
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden />
                   {rerolling ? "Buying..." : preview ? "Reroll Preview" : "Buy Another Pack"}
@@ -134,7 +134,7 @@ export function PackOpeningAnimation({
                   <div className="mt-4 text-2xl font-black uppercase tracking-widest">Rolling...</div>
                 </div>
               ) : currentCard ? (
-                <div className="revealed-card w-full max-w-sm">
+                <div className={clsx("revealed-card rarity-hit-glow w-full max-w-sm", currentCard && ["EPIC", "LEGENDARY", "MYTHIC", "ULTRA_LEGENDARY", "DIVINE"].includes(currentCard.rarity) && "rare-hit")}>
                   <CardFrame card={currentCard} />
                 </div>
               ) : (
@@ -166,7 +166,7 @@ export function PackOpeningAnimation({
                     data-card-name={card.name}
                     data-card-rarity={card.rarity}
                     className={clsx(
-                      "rounded-md border p-3 transition",
+                      "pull-row-pop rounded-md border p-3 transition",
                       isVisible ? "border-white/20 bg-white/15" : "border-white/10 bg-black/25",
                     )}
                   >

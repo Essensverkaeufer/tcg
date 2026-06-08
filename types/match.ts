@@ -3,6 +3,34 @@ import type { CardTemplate } from "./cards";
 export type PlayerId = string;
 export type Zone = "DECK" | "HAND" | "BOARD" | "GRAVEYARD" | "ATTACHED";
 
+export type BattleVisualEventType =
+  | "DRAW"
+  | "PLAY"
+  | "ITEM_ATTACH"
+  | "COMBO"
+  | "ATTACK"
+  | "DAMAGE"
+  | "HEAL"
+  | "BUFF"
+  | "STATUS"
+  | "ABILITY"
+  | "DEATH"
+  | "TURN"
+  | "ENERGY"
+  | "ERROR"
+  | "VICTORY";
+
+export type BattleVisualEvent = {
+  id: string;
+  type: BattleVisualEventType;
+  playerId?: PlayerId;
+  sourceInstanceId?: string;
+  targetInstanceId?: string;
+  amount?: number;
+  label?: string;
+  message?: string;
+};
+
 export type CardInstance = {
   instanceId: string;
   ownerId: PlayerId;
@@ -59,6 +87,7 @@ export type MatchState = {
     sourceInstanceId?: string;
     targetInstanceId?: string;
     message: string;
+    visualEvents?: BattleVisualEvent[];
   };
   winnerId?: PlayerId;
   draw?: boolean;

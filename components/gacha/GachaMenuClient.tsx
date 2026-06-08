@@ -69,7 +69,7 @@ export function GachaMenuClient() {
 
   return (
     <AuthGate>
-      <main className="min-h-[calc(100vh-76px)] overflow-hidden bg-slate-950 text-white">
+      <main className="page-enter min-h-[calc(100vh-76px)] overflow-hidden bg-slate-950 text-white">
         <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <div className="gacha-starfield absolute inset-0 opacity-60" aria-hidden />
           <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-cyan-500/20 via-violet-500/15 to-transparent blur-3xl" aria-hidden />
@@ -89,7 +89,7 @@ export function GachaMenuClient() {
               </div>
             </div>
 
-            <div className="mt-8 grid gap-5 lg:grid-cols-2">
+            <div className="animated-grid mt-8 grid gap-5 lg:grid-cols-2">
               {gachaBanners.map((banner) => {
                 const state = bannerStates[banner.slug] ?? { status: "loading" as const };
                 const ready = state.status === "ready" ? state.data : null;
@@ -97,7 +97,7 @@ export function GachaMenuClient() {
 
                 return (
                   <article key={banner.slug} className={clsx(
-                    "grid gap-5 rounded-lg border bg-black/40 p-4 shadow-2xl backdrop-blur md:grid-cols-[260px_minmax(0,1fr)]",
+                    "gacha-banner-shimmer stagger-card grid gap-5 rounded-lg border bg-black/40 p-4 shadow-2xl backdrop-blur md:grid-cols-[260px_minmax(0,1fr)]",
                     banner.featuredSlug === "pillow-necrp" ? "border-cyan-200/35 shadow-cyan-500/10" : "border-violet-200/30 shadow-violet-500/10",
                   )}>
                     <div>
@@ -147,7 +147,7 @@ export function GachaMenuClient() {
 
                       <Link
                         href={`/gacha/${banner.slug}`}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-cyan-200 px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-100"
+                        className="next-encounter-glow inline-flex w-full items-center justify-center gap-2 rounded-md bg-cyan-200 px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-100"
                       >
                         <Star className="h-4 w-4" aria-hidden />
                         Open Banner

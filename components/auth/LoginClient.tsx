@@ -75,8 +75,8 @@ export function LoginClient({ initialMode }: { initialMode: Mode }) {
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 py-12 sm:px-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <main className="page-enter mx-auto max-w-md px-4 py-12 sm:px-6">
+      <section className="surface-pop rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div data-login-root data-mode={mode}>
         <div className="grid grid-cols-2 rounded-md bg-slate-100 p-1 text-sm font-black">
           <button type="button" data-login-tab="login" onClick={() => changeMode("login")} className={mode === "login" ? "rounded bg-white py-2 shadow-sm" : "py-2 text-slate-500"}>
@@ -97,10 +97,10 @@ export function LoginClient({ initialMode }: { initialMode: Mode }) {
         >
           <input name="username" className="w-full rounded-md border border-slate-300 px-3 py-2" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Username" autoComplete="username" required />
           <input name="password" className="w-full rounded-md border border-slate-300 px-3 py-2" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" type="password" minLength={6} required />
-          <button data-login-submit className="w-full rounded-md bg-slate-950 px-4 py-2 font-black text-white disabled:bg-slate-300" disabled={loading} type="submit">
+          <button data-login-submit className="login-loading-shimmer w-full rounded-md bg-slate-950 px-4 py-2 font-black text-white disabled:bg-slate-300" disabled={loading} type="submit">
             {loading ? "Working..." : mode === "login" ? "Login" : "Register"}
           </button>
-          {message ? <p className="rounded-md bg-slate-100 p-3 text-sm font-bold text-slate-700">{message}</p> : null}
+          {message ? <p className="toast-slide rounded-md bg-slate-100 p-3 text-sm font-bold text-slate-700">{message}</p> : null}
           <p data-login-message className="rounded-md bg-slate-100 p-3 text-sm font-bold text-slate-700 empty:hidden" />
         </form>
         </div>

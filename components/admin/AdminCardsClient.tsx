@@ -213,14 +213,14 @@ export function AdminCardsClient() {
   return (
     <AuthGate>
       {!isAdmin ? (
-        <main className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6">
+        <main className="page-enter mx-auto max-w-3xl px-4 py-12 text-center sm:px-6">
           <section className="rounded-lg border border-slate-200 bg-white p-8">
             <h1 className="text-2xl font-black">Admin locked</h1>
             <p className="mt-2 text-sm font-bold text-slate-600">Card editing is only available for essens and essens2.</p>
           </section>
         </main>
       ) : (
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px]">
+      <main className="page-enter mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px]">
         <section className="rounded-lg border border-slate-200 bg-white p-5">
           <h1 className="text-3xl font-black">Admin Card Editor</h1>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -244,13 +244,13 @@ export function AdminCardsClient() {
             <textarea className="md:col-span-2 min-h-40 rounded-md border border-slate-300 px-3 py-2 font-mono text-xs" value={abilityJson} onChange={(event) => setAbilityJson(event.target.value)} />
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
-            <button type="button" onClick={() => void saveCard()} className="rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white">Save Card</button>
+            <button type="button" onClick={() => void saveCard()} className="save-button-glow rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white">Save Card</button>
             {selectedSubmissionId ? (
               <>
-                <button type="button" onClick={() => void approveSubmission()} disabled={reviewBusy} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" onClick={() => void approveSubmission()} disabled={reviewBusy} className="approve-stamp rounded-md bg-emerald-600 px-4 py-2 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
                   {reviewBusy ? "Reviewing..." : "Approve Suggestion"}
                 </button>
-                <button type="button" onClick={() => void denySubmission()} disabled={reviewBusy} className="rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-black text-rose-900 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" onClick={() => void denySubmission()} disabled={reviewBusy} className="deny-stamp rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-black text-rose-900 disabled:cursor-not-allowed disabled:opacity-50">
                   Deny Suggestion
                 </button>
               </>
@@ -289,7 +289,7 @@ export function AdminCardsClient() {
           </div>
           <div className="mt-8 overflow-hidden rounded-lg border border-slate-200">
             {cards.map((card) => (
-              <button key={card.slug} type="button" onClick={() => { setSelectedSubmissionId(null); setForm(card); setAbilityJson(JSON.stringify(card.abilityData, null, 2)); }} className="grid w-full gap-2 border-b border-slate-100 p-4 text-left text-sm last:border-b-0 sm:grid-cols-[1fr_120px_120px_80px]">
+              <button key={card.slug} type="button" onClick={() => { setSelectedSubmissionId(null); setForm(card); setAbilityJson(JSON.stringify(card.abilityData, null, 2)); }} className="history-row-slide grid w-full gap-2 border-b border-slate-100 p-4 text-left text-sm last:border-b-0 sm:grid-cols-[1fr_120px_120px_80px]">
                 <strong>{card.name}</strong>
                 <span>{card.cardType}</span>
                 <span>{card.rarity}</span>
@@ -300,7 +300,9 @@ export function AdminCardsClient() {
         </section>
         <aside>
           <h2 className="mb-3 text-lg font-black">Preview</h2>
-          <CardFrame card={form.name ? form : { ...blankCard, name: "Preview Card", slug: "preview" }} />
+          <div className="preview-crossfade">
+            <CardFrame card={form.name ? form : { ...blankCard, name: "Preview Card", slug: "preview" }} />
+          </div>
         </aside>
       </main>
       )}

@@ -226,7 +226,7 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
           </div>
         </main>
       ) : (
-      <main className="min-h-[calc(100vh-76px)] overflow-hidden bg-slate-950 text-white">
+      <main className="page-enter min-h-[calc(100vh-76px)] overflow-hidden bg-slate-950 text-white">
         <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <div className="gacha-starfield absolute inset-0 opacity-70" aria-hidden />
           <div className={clsx("absolute inset-x-0 top-0 h-80 bg-gradient-to-b blur-3xl", hasFeaturedReveal ? "from-cyan-300/35" : "from-violet-500/20")} aria-hidden />
@@ -271,7 +271,7 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                       <span>Guaranteed in {displayPity?.guaranteedIn ?? activeBanner?.hardPity}</span>
                     </div>
                     <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-white to-amber-200 transition-all" style={{ width: `${pityPercent}%` }} />
+                      <div className="pity-tick h-full rounded-full bg-gradient-to-r from-cyan-300 via-white to-amber-200 transition-all" style={{ width: `${pityPercent}%` }} />
                     </div>
                     <div className="mt-3 grid gap-2 text-xs font-bold text-slate-300 sm:grid-cols-3">
                       <span>Total pulls: {displayPity?.totalPulls ?? 0}</span>
@@ -285,7 +285,7 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                       type="button"
                       onClick={() => void pull(1)}
                       disabled={!canPullOne || pullLocked}
-                      className="inline-flex items-center gap-2 rounded-md bg-cyan-200 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
+                      className={clsx("gacha-pull-button inline-flex items-center gap-2 rounded-md bg-cyan-200 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40", !canPullOne && "insufficient-shake")}
                     >
                       {busyPull === 1 ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Star className="h-4 w-4" aria-hidden />}
                       Pull 1
@@ -295,7 +295,7 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                       type="button"
                       onClick={() => void pull(10)}
                       disabled={!canPullTen || pullLocked}
-                      className="inline-flex items-center gap-2 rounded-md bg-amber-200 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
+                      className={clsx("gacha-pull-button inline-flex items-center gap-2 rounded-md bg-amber-200 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40", !canPullTen && "insufficient-shake")}
                     >
                       {busyPull === 10 ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Zap className="h-4 w-4" aria-hidden />}
                       Pull 10
@@ -374,7 +374,7 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                           <div
                             key={`${card.slug}-${index}`}
                             className={clsx(
-                              "rounded-md border p-3 text-sm transition",
+                              "pull-row-pop rounded-md border p-3 text-sm transition",
                               visible ? "border-white/20 bg-white/15" : "border-white/10 bg-black/30",
                               reward?.featured && visible && "shadow-lg shadow-cyan-300/30",
                             )}
@@ -403,7 +403,7 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                   {status?.history.length ? status.history.map((entry) => {
                     const rewards = rewardsFromHistory(entry.rewards);
                     return (
-                      <div key={entry.id} className="rounded-md border border-white/10 bg-white/5 p-3">
+                      <div key={entry.id} className="history-row-slide rounded-md border border-white/10 bg-white/5 p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-black text-slate-300">
                           <span>{entry.pullCount} pull{entry.pullCount === 1 ? "" : "s"} - {entry.cost} coins</span>
                           <span>{entry.featuredHits ? `${entry.featuredHits} featured` : `Pity ${entry.pityBefore} -> ${entry.pityAfter}`}</span>

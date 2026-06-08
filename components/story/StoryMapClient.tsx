@@ -45,7 +45,7 @@ export function StoryMapClient() {
 
   return (
     <AuthGate>
-      <main className="min-h-[calc(100vh-78px)] bg-slate-950 text-white">
+      <main className="page-enter min-h-[calc(100vh-78px)] bg-slate-950 text-white">
         <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -72,10 +72,10 @@ function ChapterPath({ title, encounters }: { title: string; encounters: StoryPr
   if (!encounters.length) return null;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,#451a35_0%,#111827_48%,#020617_100%)] p-4 shadow-2xl shadow-rose-950/30 sm:p-6">
+    <section className="story-chapter-enter overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,#451a35_0%,#111827_48%,#020617_100%)] p-4 shadow-2xl shadow-rose-950/30 sm:p-6">
       <h2 className="text-lg font-black">{title}</h2>
       <div className="relative mt-6">
-        <div className="absolute bottom-8 left-8 top-8 w-1 rounded-full bg-gradient-to-b from-emerald-400/30 via-amber-300/50 to-rose-500/50 md:left-8 md:right-8 md:top-1/2 md:h-1 md:w-auto md:-translate-y-1/2 md:bg-gradient-to-r" />
+        <div className="story-path-line absolute bottom-8 left-8 top-8 w-1 rounded-full bg-gradient-to-b from-emerald-400/30 via-amber-300/50 to-rose-500/50 md:left-8 md:right-8 md:top-1/2 md:h-1 md:w-auto md:-translate-y-1/2 md:bg-gradient-to-r" />
         <div className="relative grid gap-4 md:grid-cols-3 xl:grid-cols-6 xl:gap-5">
           {encounters.map((encounter, index) => (
             <EncounterNode key={encounter.slug} encounter={encounter} index={index} />
@@ -89,13 +89,20 @@ function ChapterPath({ title, encounters }: { title: string; encounters: StoryPr
 function EncounterNode({ encounter, index }: { encounter: StoryProgressEncounter; index: number }) {
   const locked = encounter.status === "LOCKED";
   const completed = encounter.status === "COMPLETED";
+  const current = encounter.status === "UNLOCKED";
+  const tomGate = encounter.slug === "chapter-2-tom-macdonald-blacked";
   const Icon = encounter.boss ? Skull : completed ? Check : locked ? Lock : Swords;
 
   const content = (
     <article
       className={clsx(
-        "w-full min-w-0 rounded-lg border p-3 shadow-xl backdrop-blur",
+        "story-node w-full min-w-0 rounded-lg border p-3 shadow-xl backdrop-blur",
         encounter.boss ? "border-rose-400 bg-rose-950/70 shadow-rose-500/20" : completed ? "border-emerald-300/50 bg-emerald-950/50" : locked ? "border-white/10 bg-black/60 opacity-70" : "border-amber-300/60 bg-slate-950/85 shadow-amber-500/20",
+        current && "story-node-current",
+        completed && "story-node-completed",
+        locked && "story-node-locked",
+        encounter.boss && "story-node-boss",
+        tomGate && "story-node-tom",
       )}
     >
       <div className="flex items-center justify-between gap-3">

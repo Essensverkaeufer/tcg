@@ -339,6 +339,7 @@ const playedCard = active.hand[0];
 state = applyAction(state, { type: "PLAY_CARD", playerId: active.playerId, cardInstanceId: playedCard.instanceId, actionSeq: 1 });
 assert.equal(state.players[0].hand.length, 4, "playing should remove one card from hand");
 assert.equal(state.players[0].board.length, 1, "playing should put one card on board");
+assert.equal(state.lastEvent?.visualEvents?.some((event) => event.type === "PLAY" && event.sourceInstanceId === playedCard.instanceId), true, "playing should emit a visual PLAY event");
 const energyBeforeAttack = state.players[0].energyCurrent;
 
 state.players[0].board[0].currentAttack = 99;
@@ -354,6 +355,9 @@ state = applyAction(state, {
 assert.equal(state.phase, "FINISHED", "leader death should finish the match");
 assert.equal(state.winnerId, active.playerId, "attacker should win after killing enemy leader");
 assert.equal(state.players[0].energyCurrent, energyBeforeAttack - ATTACK_ENERGY_COST, "attacking should spend 1 energy");
+assert.equal(state.lastEvent?.visualEvents?.some((event) => event.type === "ATTACK"), true, "attacking should emit a visual ATTACK event");
+assert.equal(state.lastEvent?.visualEvents?.some((event) => event.type === "DAMAGE" && event.targetInstanceId === state.players[1].leader.instanceId), true, "attacking should emit a leader damage event");
+assert.equal(state.lastEvent?.visualEvents?.some((event) => event.type === "VICTORY"), true, "finishing a match should emit a visual VICTORY event");
 
 const capped = createMatchState(
   "cap",
@@ -698,7 +702,19 @@ const chapterTwoFirst = storyEncounters.find((encounter) => encounter.slug === "
 assert.equal(chapterTwoFirst.chapter, 2, "chapter 2 first fight should be marked as chapter 2");
 assert.equal(chapterTwoFirst.requiredPreviousSlug, "woke-mind-virus", "chapter 2 should unlock after the first Woke Mind Virus fight");
 const chapterTwoFinal = storyEncounters.find((encounter) => encounter.slug === "chapter-2-woke-mind-virus")!;
+const chapterTwoTom = storyEncounters.find((encounter) => encounter.slug === "chapter-2-tom-macdonald-blacked")!;
+assert.equal(chapterTwoTom.requiredPreviousSlug, "chapter-2-vanessa", "Tom gate should unlock after Vanessa");
+assert.equal(chapterTwoTom.rewardSlug, "tom-macdonald-blacked-chapter-2-reward", "Tom gate should grant its story reward");
+assert.equal(chapterTwoFinal.requiredPreviousSlug, "chapter-2-tom-macdonald-blacked", "ascended Woke should unlock after Tom gate");
 assert.equal(chapterTwoFinal.rewardSlug, "woke-mind-virus-deployable", "chapter 2 final boss should grant the deployable Woke Mind Virus");
+const chapterTwoTomDeck = buildStoryEnemyDeck(cardCatalog, chapterTwoTom);
+const chapterTwoTomState = createMatchState(
+  "story-chapter-2-tom",
+  { id: "story-player", name: "Player", deck: deck("story-chapter-2-tom-player") },
+  { id: "story-bot", name: chapterTwoTom.name, deck: chapterTwoTomDeck },
+  { seed: "story-chapter-2-tom-seed", deterministic: true },
+);
+assert.equal(chapterTwoTomState.players[1].leader.template.slug, "tom-macdonald-blacked-chapter-2-leader", "Tom gate should use the Tom story leader");
 const chapterTwoBossDeck = buildStoryEnemyDeck(cardCatalog, chapterTwoFinal);
 const chapterTwoBossState = createMatchState(
   "story-chapter-2-boss",
@@ -708,6 +724,8 @@ const chapterTwoBossState = createMatchState(
 );
 assert.equal(chapterTwoBossState.players[1].leader.template.slug, "woke-mind-virus-ascended-story-leader", "chapter 2 final boss should use the ascended Woke leader");
 assert.equal(cardCatalog.find((card) => card.slug === "woke-mind-virus-deployable")?.dropEnabled, false, "chapter 2 final reward should not drop from packs");
+assert.equal(cardCatalog.find((card) => card.slug === "tom-macdonald-blacked-chapter-2-leader")?.dropEnabled, false, "Tom story leader should not drop from packs");
+assert.equal(cardCatalog.find((card) => card.slug === "tom-macdonald-blacked-chapter-2-reward")?.dropEnabled, false, "Tom story reward should not drop from packs");
 
 let coinHeadsState = createMatchState(
   "coin-heads",

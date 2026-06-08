@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSiteAudio } from "@/components/audio/SiteAudioProvider";
+import { useBattleVisuals } from "@/components/battle/useBattleVisuals";
 import { getAbilityConditionError, getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { applyAction, ATTACK_ENERGY_COST, createMatchState, getCardCost, validateAction } from "@/lib/game/match/state";
@@ -137,6 +138,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
 
   const you = state?.players.find((player) => player.playerId === "story-player");
   const bot = state?.players.find((player) => player.playerId === "story-bot");
+  const visuals = useBattleVisuals(state?.lastEvent);
   const selected = state && selectedId ? findCard(state, selectedId) : undefined;
   const selectedOwner = selected ? state?.players.find((player) => player.playerId === selected.ownerId) : undefined;
   const isPlayerTurn = state?.activePlayerId === "story-player" && state.phase !== "FINISHED";
@@ -266,9 +268,9 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
 
   return (
     <AuthGate>
-      <main className="min-h-[calc(100vh-78px)] bg-slate-950 text-white">
+      <main className={clsx("min-h-[calc(100vh-78px)] bg-slate-950 text-white page-enter", visuals.arenaClass)}>
         <div className="mx-auto grid max-w-[1500px] gap-4 px-4 py-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-          <section className="min-w-0 rounded-lg border border-white/10 bg-black/35 p-4">
+          <section className="surface-pop min-w-0 rounded-lg border border-white/10 bg-black/35 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 className="text-3xl font-black">Story Battle</h1>
@@ -281,7 +283,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
             </div>
           </section>
 
-          <aside className="min-w-0 rounded-lg border border-white/10 bg-black/35 p-4 xl:row-span-3">
+          <aside className={clsx("surface-pop min-w-0 rounded-lg border border-white/10 bg-black/35 p-4 xl:row-span-3", visuals.controlsClass)}>
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">Controls</h2>
             <div className="mt-3 grid gap-2">
               <button type="button" onClick={playSelected} disabled={!isPlayerTurn || !selectedInHand} className="rounded-md bg-amber-300 px-3 py-2 text-sm font-black text-slate-950 disabled:opacity-40">
@@ -324,20 +326,21 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
           </aside>
 
           <section className="grid min-w-0 gap-4">
-            <PlayerZone title={encounter.name} player={bot} selectedId={selectedId} hideHand active={state.activePlayerId === "story-bot"} onChoose={choose} />
-            <div className="rounded-lg border border-fuchsia-500/30 bg-black/45 p-4 text-center shadow-xl shadow-fuchsia-950/30">
+            <PlayerZone title={encounter.name} player={bot} selectedId={selectedId} hideHand active={state.activePlayerId === "story-bot"} visuals={visuals} onChoose={choose} />
+            <div className={clsx("rounded-lg border border-fuchsia-500/30 bg-black/45 p-4 text-center shadow-xl shadow-fuchsia-950/30", visuals.bannerClass)}>
               <div className="text-2xl font-black">{state.phase === "FINISHED" ? playerWon ? "Victory" : "Defeat" : state.activePlayerId === "story-player" ? "Your Turn" : `${encounter.name}'s Turn`}</div>
               <div className="mt-2 text-sm font-bold text-amber-100">{state.lastEvent?.message ?? message}</div>
+              {state.activePlayerId === "story-bot" && state.phase !== "FINISHED" ? <div className="bot-thinking mt-3" aria-label="Enemy is thinking"><span /><span /><span /></div> : null}
               {state.phase === "FINISHED" ? (
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   <span className="rounded-md bg-white/10 px-3 py-2 text-xs font-black">{completionSaved ? "Progress saved" : "Saving progress..."}</span>
-                  {completionReward ? <span className="rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-slate-950">Reward: {completionReward.card.name} x{completionReward.quantity}</span> : null}
-                  {playerWon && nextEncounter ? <Link href={`/story/${nextEncounter.slug}`} className="rounded-md bg-emerald-400 px-3 py-2 text-xs font-black text-slate-950">Next Encounter</Link> : null}
+                  {completionReward ? <span className="reward-flip rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-slate-950">Reward: {completionReward.card.name} x{completionReward.quantity}</span> : null}
+                  {playerWon && nextEncounter ? <Link href={`/story/${nextEncounter.slug}`} className="next-encounter-glow rounded-md bg-emerald-400 px-3 py-2 text-xs font-black text-slate-950">Next Encounter</Link> : null}
                   <button type="button" onClick={restart} className="rounded-md border border-white/20 px-3 py-2 text-xs font-black">Retry</button>
                 </div>
               ) : null}
             </div>
-            <PlayerZone title="You" player={you} selectedId={selectedId} active={state.activePlayerId === "story-player"} onChoose={choose} />
+            <PlayerZone title="You" player={you} selectedId={selectedId} active={state.activePlayerId === "story-player"} visuals={visuals} onChoose={choose} />
           </section>
         </div>
       </main>
@@ -362,11 +365,27 @@ function StoryBlocked({ title, message }: { title: string; message: string }) {
   );
 }
 
-function PlayerZone({ title, player, selectedId, active, hideHand, onChoose }: { title: string; player: MatchPlayerState; selectedId: string; active: boolean; hideHand?: boolean; onChoose: (card: CardInstance) => void }) {
+function PlayerZone({
+  title,
+  player,
+  selectedId,
+  active,
+  hideHand,
+  visuals,
+  onChoose,
+}: {
+  title: string;
+  player: MatchPlayerState;
+  selectedId: string;
+  active: boolean;
+  hideHand?: boolean;
+  visuals: ReturnType<typeof useBattleVisuals>;
+  onChoose: (card: CardInstance) => void;
+}) {
   const leaderProtected = player.board.some((card) => card.template.cardType === "BUILDING");
 
   return (
-    <section className={clsx("min-w-0 overflow-hidden rounded-lg border bg-black/35 p-3", active ? "border-amber-300/70" : "border-white/10")}>
+    <section className={clsx("battle-zone min-w-0 overflow-hidden rounded-lg border bg-black/35 p-3", active ? "active-zone border-amber-300/70" : "border-white/10")}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -376,11 +395,11 @@ function PlayerZone({ title, player, selectedId, active, hideHand, onChoose }: {
           </div>
           <p className="mt-1 text-xs font-bold text-slate-400">Deck {player.deck.length} | Hand {player.hand.length} | Graveyard {player.graveyard.length}</p>
         </div>
-        <LeaderButton card={player.leader} selected={selectedId === player.leader.instanceId} onChoose={onChoose} />
+        <LeaderButton card={player.leader} selected={selectedId === player.leader.instanceId} visuals={visuals} onChoose={onChoose} />
       </div>
       <div className="grid grid-cols-5 gap-2">
         {player.board.map((card) => (
-          <CardButton key={card.instanceId} card={card} selected={selectedId === card.instanceId} onChoose={onChoose} />
+          <CardButton key={card.instanceId} card={card} selected={selectedId === card.instanceId} visuals={visuals} onChoose={onChoose} />
         ))}
         {Array.from({ length: Math.max(0, 5 - player.board.length) }).map((_, index) => (
           <div key={index} className="grid h-32 min-w-0 place-items-center rounded-lg border border-dashed border-white/10 text-[10px] font-black uppercase text-white/20 sm:h-36">Empty</div>
@@ -389,7 +408,7 @@ function PlayerZone({ title, player, selectedId, active, hideHand, onChoose }: {
       <div className="mt-3 flex max-w-full gap-2 overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-3 pb-4">
         {player.hand.length ? player.hand.map((card) => hideHand
           ? <CardBack key={card.instanceId} />
-          : <CardButton key={card.instanceId} card={card} selected={selectedId === card.instanceId} hand onChoose={onChoose} />) : (
+          : <CardButton key={card.instanceId} card={card} selected={selectedId === card.instanceId} hand visuals={visuals} onChoose={onChoose} />) : (
             <div className="grid min-h-32 flex-1 place-items-center text-sm font-bold text-slate-500">No cards in hand</div>
           )}
       </div>
@@ -406,11 +425,12 @@ function EnergyPill({ current, max }: { current: number; max: number }) {
   );
 }
 
-function LeaderButton({ card, selected, onChoose }: { card: CardInstance; selected: boolean; onChoose: (card: CardInstance) => void }) {
+function LeaderButton({ card, selected, visuals, onChoose }: { card: CardInstance; selected: boolean; visuals: ReturnType<typeof useBattleVisuals>; onChoose: (card: CardInstance) => void }) {
   const imageUrl = resolveCardImageUrl(card.template.imageUrl);
+  const floaters = visuals.floatersForCard(card.instanceId);
   return (
     <button type="button" onClick={() => onChoose(card)} aria-label={`Select ${card.template.name}`} className="w-full max-w-sm min-w-0 text-left sm:w-80">
-      <article className={clsx("grid grid-cols-[76px_minmax(0,1fr)] overflow-hidden rounded-lg border bg-slate-950 shadow-xl", selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
+      <article className={clsx("battle-card-visual relative grid grid-cols-[76px_minmax(0,1fr)] overflow-hidden rounded-lg border bg-slate-950 shadow-xl", visuals.classForCard(card.instanceId), selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
         <div className="relative h-24 bg-white/10">
           <div className="absolute left-1 top-1 z-10 rounded-full bg-black/80 px-2 py-1 text-[10px] font-black text-amber-100">A{card.currentAura}</div>
           {imageUrl ? (
@@ -428,6 +448,7 @@ function LeaderButton({ card, selected, onChoose }: { card: CardInstance; select
             <span className="rounded bg-violet-600/80 py-1">E{getCardCost(card.template)}</span>
           </div>
         </div>
+        <FloatingText items={floaters} />
       </article>
     </button>
   );
@@ -437,12 +458,13 @@ function CardBack() {
   return <div className="grid h-32 w-24 shrink-0 place-items-center rounded-lg border border-rose-400/40 bg-slate-950 text-[10px] font-black uppercase text-rose-200 shadow-lg sm:h-36 sm:w-28">Hidden</div>;
 }
 
-function CardButton({ card, selected, hand, onChoose }: { card: CardInstance; selected: boolean; hand?: boolean; onChoose: (card: CardInstance) => void }) {
+function CardButton({ card, selected, hand, visuals, onChoose }: { card: CardInstance; selected: boolean; hand?: boolean; visuals: ReturnType<typeof useBattleVisuals>; onChoose: (card: CardInstance) => void }) {
   const imageUrl = resolveCardImageUrl(card.template.imageUrl);
+  const floaters = visuals.floatersForCard(card.instanceId);
 
   return (
     <button type="button" onClick={() => onChoose(card)} aria-label={`Select ${card.template.name}`} className={clsx("min-w-0 shrink-0 text-left transition hover:-translate-y-1", hand ? "w-28 sm:w-32" : "w-full")}>
-      <article className={clsx("relative overflow-hidden rounded-lg border-2 bg-slate-950 shadow-xl", selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
+      <article className={clsx("battle-card-visual relative overflow-hidden rounded-lg border-2 bg-slate-950 shadow-xl", visuals.classForCard(card.instanceId), selected ? "border-amber-300 ring-2 ring-amber-200" : "border-white/15")}>
         <div className="absolute left-1 top-1 z-10 rounded-full bg-black/80 px-1.5 py-0.5 text-[10px] font-black text-amber-100">A{card.currentAura}</div>
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -457,8 +479,22 @@ function CardButton({ card, selected, hand, onChoose }: { card: CardInstance; se
             <span className="rounded bg-violet-600/80 py-1">E{getCardCost(card.template)}</span>
           </div>
         </div>
+        <FloatingText items={floaters} />
       </article>
     </button>
+  );
+}
+
+function FloatingText({ items }: { items: Array<{ id: string; label: string; tone: string }> }) {
+  if (!items.length) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20">
+      {items.slice(-3).map((item, index) => (
+        <span key={item.id} className={clsx("battle-float-text", `battle-float-${item.tone}`)} style={{ left: `${48 + index * 8}%`, top: `${16 + index * 12}%` }}>
+          {item.label}
+        </span>
+      ))}
+    </div>
   );
 }
 

@@ -108,7 +108,7 @@ export function CardCreatorClient() {
 
   return (
     <AuthGate>
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px]">
+      <main className="page-enter mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px]">
         <section className="rounded-lg border border-slate-200 bg-white p-5">
           <div>
             <h1 className="text-3xl font-black">Create Card</h1>
@@ -157,7 +157,7 @@ export function CardCreatorClient() {
           </section>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => void submitCard()} disabled={busy} className="rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" onClick={() => void submitCard()} disabled={busy} className="save-button-glow rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
               {busy ? "Sending..." : "Submit Suggestion"}
             </button>
             {message ? <p className="text-sm font-bold text-slate-700">{message}</p> : null}
@@ -180,7 +180,9 @@ export function CardCreatorClient() {
         </section>
         <aside>
           <h2 className="mb-3 text-lg font-black">Preview</h2>
-          <CardFrame card={form.name ? previewCard : { ...blankCard, name: "Preview Card", slug: "preview" }} />
+          <div className="preview-crossfade">
+            <CardFrame card={form.name ? previewCard : { ...blankCard, name: "Preview Card", slug: "preview" }} />
+          </div>
         </aside>
       </main>
     </AuthGate>

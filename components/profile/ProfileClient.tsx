@@ -75,10 +75,10 @@ export function ProfileClient() {
 
   return (
     <AuthGate>
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
+      <main className="page-enter mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <section className="surface-pop rounded-lg border border-slate-200 bg-white p-6">
           <div className="flex flex-wrap items-center gap-5">
-            <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-3xl font-black uppercase text-slate-500">
+            <div className="avatar-crossfade grid h-24 w-24 place-items-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-3xl font-black uppercase text-slate-500">
               {profile?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -118,10 +118,10 @@ export function ProfileClient() {
               placeholder="Say something about your account."
             />
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="submit" onClick={(event) => { event.preventDefault(); void saveBio(); }} disabled={busy} className="rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white disabled:bg-slate-300">
+              <button type="submit" onClick={(event) => { event.preventDefault(); void saveBio(); }} disabled={busy} className="save-button-glow rounded-md bg-slate-950 px-4 py-2 text-sm font-black text-white disabled:bg-slate-300">
                 {busy ? "Saving..." : "Save Profile"}
               </button>
-              {message ? <span className="text-sm font-bold text-slate-600">{message}</span> : null}
+              {message ? <span className="toast-slide text-sm font-bold text-slate-600">{message}</span> : null}
             </div>
           </form>
         </section>

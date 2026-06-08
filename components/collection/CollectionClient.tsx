@@ -72,7 +72,7 @@ export function CollectionClient() {
 
   return (
     <AuthGate>
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <main className="page-enter mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black">Collection</h1>
@@ -105,7 +105,7 @@ export function CollectionClient() {
           </select>
         </div>
         {error ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 p-8 text-center text-sm font-bold text-rose-700">
+          <div className="soft-shake rounded-lg border border-rose-200 bg-rose-50 p-8 text-center text-sm font-bold text-rose-700">
             {error}
           </div>
         ) : loading ? (
@@ -113,15 +113,15 @@ export function CollectionClient() {
             Loading collection...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-bold text-slate-600">
+          <div className="soft-shimmer rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-bold text-slate-600">
             No owned cards match this view. Open packs to build your collection.
           </div>
         ) : (
-          <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((entry) => (
-              <div key={entry.card.slug} className="transition duration-200 hover:-translate-y-1">
+          <div className="animated-grid grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((entry, index) => (
+              <div key={entry.card.slug} className="stagger-card transition duration-200 hover:-translate-y-1" style={{ animationDelay: `${Math.min(index, 16) * 42}ms` }}>
                 <div className="mb-2 flex justify-end">
-                  <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-black text-white shadow-sm">Owned x{entry.quantity}</span>
+                  <span className="owned-badge-bump rounded-full bg-slate-950 px-3 py-1 text-xs font-black text-white shadow-sm">Owned x{entry.quantity}</span>
                 </div>
                 <CardFrame card={entry.card} href={`/cards/${entry.card.slug}`} />
               </div>
