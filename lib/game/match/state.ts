@@ -108,6 +108,7 @@ export function validateAction(state: MatchState, action: MatchAction): Validati
     if (!ability || ability.trigger !== "ACTIVATED") return { ok: false, reason: "Card has no activated ability." };
     if (source.activatedThisTurn.includes(ability.id)) return { ok: false, reason: "Ability was already used this turn." };
     const sourceOwner = getPlayer(state, source.ownerId);
+    if (ability.oncePerGame && sourceOwner.oncePerGameUsed.includes(ability.id)) return { ok: false, reason: "Ability was already used this game." };
     const cooldownRemaining = getAbilityCooldownRemaining(source, ability.id, sourceOwner.turnsStarted);
     if (cooldownRemaining > 0) return { ok: false, reason: `Ability is on cooldown for ${cooldownRemaining} more turn(s).` };
     if ((source.stunnedUntilTurn ?? 0) >= state.turn) return { ok: false, reason: "Card is stunned." };

@@ -166,6 +166,24 @@ function garrettPrimeLeader(): CardTemplate {
   };
 }
 
+function oncePerGameLeader(): CardTemplate {
+  return {
+    ...leader,
+    slug: "once-leader",
+    name: "Once Leader",
+    abilityData: [
+      {
+        id: "once-leader-heal",
+        label: "One Time Heal",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        oncePerGame: true,
+        effects: [{ type: "HEAL", target: "SELF", amount: 1 }],
+      },
+    ],
+  };
+}
+
 function jpjsBasement(): CardTemplate {
   return {
     ...building("jpjs-basement", 0, 10),
@@ -503,6 +521,25 @@ const stunnedBotState = structuredClone(botProtectedState);
 stunnedBotState.players[1].board[0].stunnedUntilTurn = stunnedBotState.turn + 3;
 const stunnedBotAction = chooseBotAction(stunnedBotState, "story-bot", "HARD");
 assert.notEqual(stunnedBotAction.type === "ATTACK" ? stunnedBotAction.attackerInstanceId : "", stunnedBotState.players[1].board[0].instanceId, "bot should not attack with stunned cards");
+
+let onceBotState = createMatchState(
+  "story-bot-once-per-game",
+  { id: "story-bot", name: "Bot", deck: [oncePerGameLeader()] },
+  { id: "story-player", name: "Player", deck: [leader] },
+  { seed: "story-bot-once-per-game-seed", deterministic: true },
+);
+const onceBotAction = chooseBotAction(onceBotState, "story-bot", "NORMAL");
+assert.equal(onceBotAction.type, "USE_ABILITY", "bot should use an available once-per-game ability");
+onceBotState = applyAction(onceBotState, onceBotAction);
+onceBotState = applyAction(onceBotState, { type: "END_TURN", playerId: "story-bot" });
+onceBotState = applyAction(onceBotState, { type: "END_TURN", playerId: "story-player" });
+assert.deepEqual(validateAction(onceBotState, {
+  type: "USE_ABILITY",
+  playerId: "story-bot",
+  sourceInstanceId: onceBotState.players[0].leader.instanceId,
+  abilityId: "once-leader-heal",
+}), { ok: false, reason: "Ability was already used this game." }, "once-per-game abilities should stay blocked on later turns");
+assert.equal(chooseBotAction(onceBotState, "story-bot", "NORMAL").type, "END_TURN", "bot should pass instead of repeating a spent once-per-game ability forever");
 
 const bossEncounter = storyEncounters.find((encounter) => encounter.slug === "woke-mind-virus")!;
 const bossDeck = buildStoryEnemyDeck(cardCatalog, bossEncounter);
