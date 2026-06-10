@@ -651,6 +651,7 @@ let onceBotState = createMatchState(
   { id: "story-player", name: "Player", deck: [leader] },
   { seed: "story-bot-once-per-game-seed", deterministic: true },
 );
+onceBotState.players[0].leader.currentHealth -= 1;
 const onceBotAction = chooseBotAction(onceBotState, "story-bot", "NORMAL");
 assert.equal(onceBotAction.type, "USE_ABILITY", "bot should use an available once-per-game ability");
 onceBotState = applyAction(onceBotState, onceBotAction);

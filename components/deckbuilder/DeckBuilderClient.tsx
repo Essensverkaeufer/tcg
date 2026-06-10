@@ -8,6 +8,7 @@ import { DeckRulesPanel } from "@/components/deckbuilder/DeckRulesPanel";
 import { cardSortOptions, sortCardEntries, type CardSortKey, type SortDirection } from "@/lib/game/card-sorting";
 import { validateDeck } from "@/lib/game/decks/validateDeck";
 import { rarityValues } from "@/lib/game/rarities";
+import { getVisibleTraits } from "@/lib/game/traits";
 import type { CardTemplate, CardType, Rarity } from "@/types/cards";
 
 type OwnedCard = {
@@ -42,6 +43,7 @@ export function DeckBuilderClient() {
   const [search, setSearch] = useState("");
   const [rarity, setRarity] = useState<Rarity | "ALL">("ALL");
   const [cardType, setCardType] = useState<CardType | "ALL">("ALL");
+  const [trait, setTrait] = useState("ALL");
   const [sortKey, setSortKey] = useState<CardSortKey>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
@@ -97,17 +99,23 @@ export function DeckBuilderClient() {
 
   const validation = validateDeck(selectedCards);
   const totalCards = selectedCards.reduce((sum, entry) => sum + entry.quantity, 0);
+  const traitOptions = useMemo(() => {
+    const values = new Set<string>();
+    for (const owned of ownedCards) getVisibleTraits(owned.card).forEach((value) => values.add(value));
+    return ["ALL", ...Array.from(values).sort()];
+  }, [ownedCards]);
   const visibleOwnedCards = useMemo(() => {
     const matchingCards = ownedCards
       .filter((owned) => {
         const matchesSearch = owned.card.name.toLowerCase().includes(search.toLowerCase());
         const matchesRarity = rarity === "ALL" || owned.card.rarity === rarity;
         const matchesType = cardType === "ALL" || owned.card.cardType === cardType;
-        return matchesSearch && matchesRarity && matchesType;
+        const matchesTrait = trait === "ALL" || getVisibleTraits(owned.card).includes(trait);
+        return matchesSearch && matchesRarity && matchesType && matchesTrait;
       })
       .map((owned) => ({ ...owned, deckQuantity: deck[owned.id] ?? 0 }));
     return sortCardEntries(matchingCards, sortKey, sortDirection);
-  }, [cardType, deck, ownedCards, rarity, search, sortDirection, sortKey]);
+  }, [cardType, deck, ownedCards, rarity, search, sortDirection, sortKey, trait]);
 
   function addCard(id: string) {
     const owned = ownedCards.find((card) => card.id === id);
@@ -201,13 +209,16 @@ export function DeckBuilderClient() {
             New Deck
           </button>
           {message ? <div className="toast-slide mt-3 rounded-md bg-slate-100 p-3 text-sm font-bold text-slate-700">{message}</div> : null}
-          <div className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-5">
+          <div className="mt-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-6">
             <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Search cards" value={search} onChange={(event) => setSearch(event.target.value)} />
             <select className="rounded-md border border-slate-300 px-3 py-2" value={rarity} onChange={(event) => setRarity(event.target.value as Rarity | "ALL")}>
               {rarityOptions.map((option) => <option key={option}>{option}</option>)}
             </select>
             <select className="rounded-md border border-slate-300 px-3 py-2" value={cardType} onChange={(event) => setCardType(event.target.value as CardType | "ALL")}>
               {typeOptions.map((option) => <option key={option}>{option}</option>)}
+            </select>
+            <select className="rounded-md border border-slate-300 px-3 py-2" value={trait} onChange={(event) => setTrait(event.target.value)}>
+              {traitOptions.map((option) => <option key={option} value={option}>{option === "ALL" ? "ALL TRAITS" : option.replace(/_/g, " ")}</option>)}
             </select>
             <select
               className="rounded-md border border-slate-300 px-3 py-2"

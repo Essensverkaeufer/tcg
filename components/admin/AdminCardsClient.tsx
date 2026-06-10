@@ -8,6 +8,7 @@ import { isAdminUsername } from "@/lib/admin";
 import { parseAbilityJson } from "@/lib/game/card-submissions";
 import { cardRowToTemplate } from "@/lib/game/mapping";
 import { rarityValues } from "@/lib/game/rarities";
+import { formatTraitsForInput, parseTraitInput } from "@/lib/game/traits";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { AbilityDefinition, CardTemplate, CardType, Rarity } from "@/types/cards";
 import type { Database } from "@/types/supabase";
@@ -23,6 +24,7 @@ const blankCard: CardTemplate = {
   health: 0,
   size: 0,
   aura: 0,
+  traits: [],
   imageUrl: "",
   soundEffectUrl: "",
   abilityData: [],
@@ -237,6 +239,7 @@ export function AdminCardsClient() {
             ))}
             <textarea className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
             <textarea className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Flavor text" value={form.flavorText} onChange={(event) => setForm({ ...form, flavorText: event.target.value })} />
+            <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Traits, comma separated" value={formatTraitsForInput(form.traits)} onChange={(event) => setForm({ ...form, traits: parseTraitInput(event.target.value) })} />
             <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Image URL" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
             <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Sound Effect URL" value={form.soundEffectUrl ?? ""} onChange={(event) => setForm({ ...form, soundEffectUrl: event.target.value })} />
             <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" type="file" accept="image/*" onChange={(event) => event.target.files?.[0] && void uploadImage(event.target.files[0])} />
@@ -322,6 +325,7 @@ function submissionToCard(submission: SubmissionRow): CardTemplate {
     health: submission.health,
     size: submission.size,
     aura: submission.aura,
+    traits: Array.isArray(submission.traits) ? submission.traits : [],
     imageUrl: submission.image_url,
     soundEffectUrl: submission.sound_effect_url,
     abilityData: Array.isArray(submission.ability_data) ? submission.ability_data as CardTemplate["abilityData"] : [],

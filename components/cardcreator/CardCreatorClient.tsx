@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { CardFrame } from "@/components/cards/CardFrame";
 import { cardCreatorStatSuggestions, parseAbilityJson, slugifyCardName } from "@/lib/game/card-submissions";
 import { rarityValues } from "@/lib/game/rarities";
+import { formatTraitsForInput, parseTraitInput } from "@/lib/game/traits";
 import type { AbilityDefinition, CardTemplate, CardType, Rarity } from "@/types/cards";
 import type { Database } from "@/types/supabase";
 
@@ -20,6 +21,7 @@ const blankCard: CardTemplate = {
   health: 0,
   size: 0,
   aura: 0,
+  traits: [],
   imageUrl: "",
   soundEffectUrl: "",
   abilityData: [],
@@ -79,6 +81,7 @@ export function CardCreatorClient() {
     body.set("health", String(form.health));
     body.set("size", String(form.size));
     body.set("aura", String(form.aura));
+    body.set("traits", formatTraitsForInput(form.traits));
     body.set("flavorText", form.flavorText);
     body.set("abilityJson", JSON.stringify(parsedAbilities));
     if (imageFile) body.set("image", imageFile);
@@ -131,6 +134,7 @@ export function CardCreatorClient() {
             ))}
             <textarea className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
             <textarea className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Flavor text" value={form.flavorText} onChange={(event) => setForm({ ...form, flavorText: event.target.value })} />
+            <input className="md:col-span-2 rounded-md border border-slate-300 px-3 py-2" placeholder="Traits, comma separated" value={formatTraitsForInput(form.traits)} onChange={(event) => setForm({ ...form, traits: parseTraitInput(event.target.value) })} />
             <label className="md:col-span-2 rounded-md border border-dashed border-slate-300 px-3 py-3 text-sm font-bold text-slate-600">
               Card Art
               <input className="mt-2 block w-full" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} />

@@ -2,11 +2,13 @@ import Link from "next/link";
 import clsx from "clsx";
 import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { getRarityTheme } from "@/lib/game/rarities";
+import { getVisibleTraits } from "@/lib/game/traits";
 import type { CardTemplate } from "@/types/cards";
 
 export function CardFrame({ card, href }: { card: CardTemplate; href?: string }) {
   const rarityTheme = getRarityTheme(card.rarity);
   const imageUrl = resolveCardImageUrl(card.imageUrl);
+  const traits = getVisibleTraits(card);
   const body = (
     <article className={clsx("tcg-card-frame interactive-card foil-hover flex h-full min-h-80 flex-col rounded-lg border-2 bg-gradient-to-br p-3 text-[#0f172a] shadow-sm", rarityTheme.card)}>
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -23,6 +25,15 @@ export function CardFrame({ card, href }: { card: CardTemplate; href?: string })
           {card.name}
         </div>
       )}
+      {traits.length ? (
+        <div className="mt-3 flex flex-wrap gap-1">
+          {traits.slice(0, 5).map((trait) => (
+            <span key={trait} className="rounded-full bg-slate-950/85 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+              {trait.replace(/_/g, " ")}
+            </span>
+          ))}
+        </div>
+      ) : null}
       <p className="mt-3 flex-1 text-sm leading-5 text-[#1f2937]">{card.description}</p>
       <p className="mt-2 text-xs italic text-[#475569]">{card.flavorText}</p>
       <div className="mt-3 grid grid-cols-4 gap-1 text-center text-xs font-black">

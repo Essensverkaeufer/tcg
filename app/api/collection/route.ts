@@ -32,9 +32,32 @@ export async function GET(request: Request) {
       quantity: row.quantity,
       card: cardRowToTemplate(row.card_templates!),
     }));
+  const ownedIds = new Set(entries.map((entry) => entry.id));
+  const [profileResult, craftableResult] = await Promise.all([
+    auth.supabase.from("profiles").select("duplicate_credits").eq("id", auth.user.id).single(),
+    auth.supabase
+      .from("card_templates")
+      .select("*")
+      .eq("drop_enabled", true)
+      .order("rarity", { ascending: true })
+      .order("name", { ascending: true }),
+  ]);
+
+  if (profileResult.error) {
+    return NextResponse.json({ error: profileResult.error.message }, { status: 500 });
+  }
+  if (craftableResult.error) {
+    return NextResponse.json({ error: craftableResult.error.message }, { status: 500 });
+  }
+
+  const craftable = (craftableResult.data ?? [])
+    .filter((row) => !ownedIds.has(row.id))
+    .map(cardRowToTemplate);
 
   return NextResponse.json({
     entries,
+    craftable,
+    duplicateCredits: profileResult.data.duplicate_credits ?? 0,
     ownedTemplates: entries.length,
     totalQuantity: entries.reduce((sum, entry) => sum + entry.quantity, 0),
   });

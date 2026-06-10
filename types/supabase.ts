@@ -11,6 +11,7 @@ export type Database = {
           avatar_url: string | null;
           bio: string | null;
           coins: number;
+          duplicate_credits: number;
           wins: number;
           losses: number;
           matches_played: number;
@@ -25,6 +26,7 @@ export type Database = {
           avatar_url?: string | null;
           bio?: string | null;
           coins?: number;
+          duplicate_credits?: number;
           wins?: number;
           losses?: number;
           matches_played?: number;
@@ -55,6 +57,7 @@ export type Database = {
           balance_version: string;
           created_at: string;
           category: string | null;
+          traits: string[];
         };
         Insert: Partial<Database["public"]["Tables"]["card_templates"]["Row"]> & {
           slug: string;
@@ -90,6 +93,7 @@ export type Database = {
           submitted_at: string;
           reviewed_at: string | null;
           updated_at: string;
+          traits: string[];
         };
         Insert: {
           id?: string;
@@ -114,6 +118,7 @@ export type Database = {
           submitted_at?: string;
           reviewed_at?: string | null;
           updated_at?: string;
+          traits?: string[];
         };
         Update: Partial<Database["public"]["Tables"]["card_template_submissions"]["Insert"]>;
         Relationships: [];
@@ -197,7 +202,7 @@ export type Database = {
           id: string;
           user_id: string;
           amount: number;
-          reason: "DAILY_LOGIN" | "MATCH_WIN" | "MATCH_LOSS" | "MATCH_DRAW" | "PACK_PURCHASE" | "GACHA_PULL" | "ADMIN_GRANT";
+          reason: "DAILY_LOGIN" | "MATCH_WIN" | "MATCH_LOSS" | "MATCH_DRAW" | "PACK_PURCHASE" | "GACHA_PULL" | "ADMIN_GRANT" | "STORY_FIRST_CLEAR" | "STORY_REPLAY";
           metadata: Json | null;
           created_at: string;
         };
@@ -228,6 +233,26 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["daily_login_rewards"]["Insert"]>;
+        Relationships: [];
+      };
+      duplicate_credit_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          reason: "CONVERT_DUPLICATES" | "CRAFT_CARD";
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          reason: Database["public"]["Tables"]["duplicate_credit_transactions"]["Row"]["reason"];
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["duplicate_credit_transactions"]["Insert"]>;
         Relationships: [];
       };
       gacha_pity: {
@@ -499,6 +524,28 @@ export type Database = {
           cost: number;
           pity_before: number;
           pity_after: number;
+        }>;
+      };
+      convert_duplicate_extras: {
+        Args: {
+          p_user_id: string;
+        };
+        Returns: Array<{
+          credits: number;
+          converted: Json;
+          duplicate_credits: number;
+        }>;
+      };
+      craft_collection_card: {
+        Args: {
+          p_user_id: string;
+          p_card_slug: string;
+        };
+        Returns: Array<{
+          card_template_id: string;
+          duplicate_credits: number;
+          quantity: number;
+          cost: number;
         }>;
       };
     };

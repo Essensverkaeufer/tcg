@@ -31,6 +31,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
   const [blocked, setBlocked] = useState("");
   const [completionSaved, setCompletionSaved] = useState(false);
   const [completionReward, setCompletionReward] = useState<{ card: CardTemplate; quantity: number } | null>(null);
+  const [completionCoins, setCompletionCoins] = useState<{ amount: number; coins: number; reason: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +82,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
       setPendingAbilityId("");
       setCompletionSaved(false);
       setCompletionReward(null);
+      setCompletionCoins(null);
       reportedMatchId.current = "";
     })();
 
@@ -104,7 +106,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
       setState((current) => {
         if (!current || current.phase === "FINISHED" || current.activePlayerId !== "story-bot") return current;
         try {
-          const action = chooseBotAction(current, "story-bot", encounter.difficulty);
+          const action = chooseBotAction(current, "story-bot", encounter.difficulty, encounter.personality);
           const next = applyAction(current, action);
           setMessage(next.lastEvent?.message ?? "Enemy acted.");
           return next;
@@ -132,6 +134,9 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
       setCompletionSaved(response.ok);
       if (response.ok && payload.reward) {
         setCompletionReward(payload.reward);
+      }
+      if (response.ok && payload.coinReward) {
+        setCompletionCoins(payload.coinReward);
       }
     })();
   }, [encounter, state]);
@@ -335,6 +340,7 @@ export function StoryBattleClient({ encounterSlug }: { encounterSlug: string }) 
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   <span className="rounded-md bg-white/10 px-3 py-2 text-xs font-black">{completionSaved ? "Progress saved" : "Saving progress..."}</span>
                   {completionReward ? <span className="reward-flip rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-slate-950">Reward: {completionReward.card.name} x{completionReward.quantity}</span> : null}
+                  {completionCoins ? <span className="reward-flip rounded-md bg-cyan-300 px-3 py-2 text-xs font-black text-slate-950">Coins +{completionCoins.amount}</span> : null}
                   {playerWon && nextEncounter ? <Link href={`/story/${nextEncounter.slug}`} className="next-encounter-glow rounded-md bg-emerald-400 px-3 py-2 text-xs font-black text-slate-950">Next Encounter</Link> : null}
                   <button type="button" onClick={restart} className="rounded-md border border-white/20 px-3 py-2 text-xs font-black">Retry</button>
                 </div>

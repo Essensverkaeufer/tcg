@@ -1,5 +1,6 @@
 import type { CardTemplate } from "@/types/cards";
 import type { Database, Json } from "@/types/supabase";
+import { normalizeTraits } from "@/lib/game/traits";
 
 export type SupabaseCardRow = Database["public"]["Tables"]["card_templates"]["Row"];
 
@@ -16,6 +17,7 @@ export function cardRowToTemplate(row: SupabaseCardRow): CardTemplate {
     size: row.size,
     aura: row.aura,
     category: row.category ?? undefined,
+    traits: normalizeTraits(row.traits ?? [], row.category ?? undefined),
     imageUrl: row.image_url,
     soundEffectUrl: row.sound_effect_url ?? "",
     dropEnabled: row.drop_enabled ?? true,
@@ -35,6 +37,7 @@ export function cardTemplateToInsert(card: CardTemplate): Database["public"]["Ta
     size: card.size,
     aura: card.aura,
     category: card.category ?? null,
+    traits: normalizeTraits(card.traits, card.category),
     image_url: card.imageUrl,
     sound_effect_url: card.soundEffectUrl ?? "",
     drop_enabled: card.dropEnabled ?? true,

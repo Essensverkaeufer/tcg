@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { extensionFromFile, imageMimeTypes, maxCardMediaBytes, parseAbilityJson, slugifyCardName, soundMimeTypes } from "@/lib/game/card-submissions";
 import { rarityValues } from "@/lib/game/rarities";
+import { parseTraitInput } from "@/lib/game/traits";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 import type { Database, Json } from "@/types/supabase";
 
@@ -17,6 +18,7 @@ const cardFormSchema = z.object({
   health: z.coerce.number().int().min(0),
   size: z.coerce.number().int().min(0),
   aura: z.coerce.number().int().min(0),
+  traits: z.string().default(""),
   flavorText: z.string().default(""),
   abilityJson: z.string().default("[]"),
 });
@@ -87,6 +89,7 @@ export async function POST(request: Request) {
         image_path: image?.path ?? null,
         sound_effect_url: sound?.publicUrl ?? "",
         sound_effect_path: sound?.path ?? null,
+        traits: parseTraitInput(parsed.data.traits),
         flavor_text: parsed.data.flavorText,
         ability_data: abilityData as Json,
       })

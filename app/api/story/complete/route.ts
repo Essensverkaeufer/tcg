@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unknown story encounter." }, { status: 404 });
   }
 
-  const profile = await auth.supabase.from("profiles").select("username").eq("id", auth.user.id).maybeSingle();
+  const profile = await auth.supabase.from("profiles").select("username, coins").eq("id", auth.user.id).maybeSingle();
   const hasTesterAccess = isStoryTesterUsername(profile.data?.username);
 
   if (encounter.requiredPreviousSlug && !hasTesterAccess) {
@@ -58,6 +58,8 @@ export async function POST(request: Request) {
 
   const current = existing.data;
   const won = parsed.data.result === "WIN";
+  const firstClear = won && current?.status !== "COMPLETED";
+  const storyCoinAmount = won ? firstClear ? encounter.firstClearCoins : encounter.replayCoins : 0;
   const bestTurns = won && parsed.data.turns
     ? current?.best_turns
       ? Math.min(current.best_turns, parsed.data.turns)
@@ -85,6 +87,7 @@ export async function POST(request: Request) {
   }
 
   let reward = null;
+  let coinReward = null;
 
   if (won && encounter.rewardSlug) {
     const rewardCard = await auth.supabase
@@ -145,5 +148,42 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ progress: saved.data, reward });
+  if (storyCoinAmount > 0) {
+    const updatedProfile = await auth.supabase
+      .from("profiles")
+      .update({ coins: (profile.data?.coins ?? 0) + storyCoinAmount })
+      .eq("id", auth.user.id)
+      .select("coins")
+      .single();
+
+    if (updatedProfile.error) {
+      return NextResponse.json({ error: updatedProfile.error.message }, { status: 500 });
+    }
+
+    const reason = firstClear ? "STORY_FIRST_CLEAR" : "STORY_REPLAY";
+    const ledger = await auth.supabase
+      .from("currency_transactions")
+      .insert({
+        user_id: auth.user.id,
+        amount: storyCoinAmount,
+        reason,
+        metadata: {
+          encounterSlug: encounter.slug,
+          result: parsed.data.result,
+          turns: parsed.data.turns ?? null,
+        },
+      });
+
+    if (ledger.error) {
+      return NextResponse.json({ error: ledger.error.message }, { status: 500 });
+    }
+
+    coinReward = {
+      amount: storyCoinAmount,
+      reason,
+      coins: updatedProfile.data.coins,
+    };
+  }
+
+  return NextResponse.json({ progress: saved.data, reward, coinReward });
 }

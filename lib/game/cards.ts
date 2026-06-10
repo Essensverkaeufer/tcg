@@ -25,7 +25,7 @@ function zeroStatCard(
 }
 
 const supabaseCardArtBase = "https://ibhtgdxruglejkpslqgx.supabase.co/storage/v1/object/public/card-art/cards";
-const supabaseSoundBase = "https://ibhtgdxruglejkpslqgx.supabase.co/storage/v1/object/public/sounds";
+const supabaseSoundBase = "https://ibhtgdxruglejkpslqgx.supabase.co/storage/v1/object/public/card-art/sounds";
 
 export const cardCatalog: CardTemplate[] = [
   {
@@ -151,6 +151,24 @@ export const cardCatalog: CardTemplate[] = [
         ],
       },
     ],
+  },
+  {
+    slug: "trait-foundation-map",
+    name: "Trait Foundation Map",
+    description: "A constellation relic that rewards building around shared traits without giving away every hidden combo.",
+    flavorText: "The map does not show the treasure. It shows why the treasure matters.",
+    rarity: "DIVINE",
+    cardType: "ITEM",
+    attack: 2,
+    health: 4,
+    size: 0,
+    aura: 2,
+    category: "FOUNDATION",
+    traits: ["FOUNDATION", "SUPPORT", "COMBO_PIECE"],
+    imageUrl: `${supabaseCardArtBase}/trait-foundation-map.webp`,
+    soundEffectUrl: `${supabaseSoundBase}/trait-foundation-map.mp3`,
+    dropEnabled: true,
+    abilityData: [],
   },
   {
     slug: "gay-little-puppygirl-story-leader",

@@ -2,6 +2,7 @@ import { cardCatalog } from "@/lib/game/cards";
 import type { CardTemplate } from "@/types/cards";
 
 export type StoryDifficulty = "EASY" | "NORMAL" | "HARD" | "BOSS";
+export type StoryBotPersonality = "BALANCED" | "AGGRESSIVE" | "DEFENSIVE" | "CONTROL" | "COMBO" | "BOSS";
 
 export type StoryEncounter = {
   slug: string;
@@ -9,6 +10,9 @@ export type StoryEncounter = {
   description: string;
   chapter: 1 | 2;
   difficulty: StoryDifficulty;
+  personality: StoryBotPersonality;
+  firstClearCoins: number;
+  replayCoins: number;
   position: { x: number; y: number };
   requiredPreviousSlug?: string;
   enemyDeck: string[];
@@ -53,6 +57,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "A soft opener with low stats and simple plays.",
     chapter: 1,
     difficulty: "EASY",
+    personality: "BALANCED",
+    firstClearCoins: 100,
+    replayCoins: 20,
     position: { x: 8, y: 64 },
     enemyDeck: [
       "garrett-prime",
@@ -73,6 +80,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "A chaotic early boss that starts using ability pressure.",
     chapter: 1,
     difficulty: "NORMAL",
+    personality: "CONTROL",
+    firstClearCoins: 125,
+    replayCoins: 25,
     requiredPreviousSlug: "tutorial-garrett-current",
     position: { x: 25, y: 40 },
     rewardSlug: "gay-little-puppygirl-story-reward",
@@ -95,6 +105,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "A bulky boss fight with JPJ support and basement pressure.",
     chapter: 1,
     difficulty: "NORMAL",
+    personality: "DEFENSIVE",
+    firstClearCoins: 150,
+    replayCoins: 30,
     requiredPreviousSlug: "rowlet-study-session",
     position: { x: 43, y: 68 },
     rewardSlug: "buurazu-story-reward",
@@ -118,6 +131,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "A volatile boss with safe random character removal and defensive support.",
     chapter: 1,
     difficulty: "HARD",
+    personality: "CONTROL",
+    firstClearCoins: 175,
+    replayCoins: 35,
     requiredPreviousSlug: "jpj-basement-trap",
     position: { x: 61, y: 44 },
     rewardSlug: "anarchy-story-reward",
@@ -141,6 +157,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "A corrupted miniboss that blinds key characters and hides behind big walls.",
     chapter: 1,
     difficulty: "HARD",
+    personality: "DEFENSIVE",
+    firstClearCoins: 200,
+    replayCoins: 40,
     requiredPreviousSlug: "necrp-tuff-wall",
     position: { x: 76, y: 66 },
     rewardSlug: "pacmanpowerghost-corrupted-story-reward",
@@ -164,6 +183,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "Final boss of the first path. Strong deck, ruthless bot.",
     chapter: 1,
     difficulty: "BOSS",
+    personality: "BOSS",
+    firstClearCoins: 300,
+    replayCoins: 60,
     requiredPreviousSlug: "pillow-necrp-rest-stop",
     position: { x: 92, y: 32 },
     boss: true,
@@ -188,6 +210,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "The continuation begins with a printer that learned how to swing back.",
     chapter: 2,
     difficulty: "HARD",
+    personality: "AGGRESSIVE",
+    firstClearCoins: 225,
+    replayCoins: 45,
     requiredPreviousSlug: "woke-mind-virus",
     position: { x: 8, y: 64 },
     rewardSlug: "ada-printa-chapter-2-reward",
@@ -210,6 +235,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "A sharper second fight with more pressure and fewer free turns.",
     chapter: 2,
     difficulty: "HARD",
+    personality: "AGGRESSIVE",
+    firstClearCoins: 250,
+    replayCoins: 50,
     requiredPreviousSlug: "chapter-2-ada-printa",
     position: { x: 28, y: 40 },
     rewardSlug: "eth22-chapter-2-reward",
@@ -233,6 +261,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "A corrupted wall fight built around huge aura and bad coin-flip energy.",
     chapter: 2,
     difficulty: "BOSS",
+    personality: "COMBO",
+    firstClearCoins: 275,
+    replayCoins: 55,
     requiredPreviousSlug: "chapter-2-eth22",
     position: { x: 48, y: 68 },
     rewardSlug: "mwyi-corrupted-chapter-2-reward",
@@ -256,6 +287,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "The late chapter gatekeeper brings American pressure and item spikes.",
     chapter: 2,
     difficulty: "BOSS",
+    personality: "COMBO",
+    firstClearCoins: 300,
+    replayCoins: 60,
     requiredPreviousSlug: "chapter-2-mwyi-corrupted",
     position: { x: 68, y: 44 },
     rewardSlug: "vanessa-chapter-2-reward",
@@ -280,6 +314,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "The final gate before the ascended rematch hits harder and plays loud.",
     chapter: 2,
     difficulty: "BOSS",
+    personality: "AGGRESSIVE",
+    firstClearCoins: 350,
+    replayCoins: 70,
     requiredPreviousSlug: "chapter-2-vanessa",
     position: { x: 82, y: 64 },
     rewardSlug: "tom-macdonald-blacked-chapter-2-reward",
@@ -306,6 +343,9 @@ export const storyEncounters: StoryEncounter[] = [
     description: "The rematch is stronger, cooler, and much less polite.",
     chapter: 2,
     difficulty: "BOSS",
+    personality: "BOSS",
+    firstClearCoins: 500,
+    replayCoins: 100,
     requiredPreviousSlug: "chapter-2-tom-macdonald-blacked",
     position: { x: 94, y: 28 },
     rewardSlug: "woke-mind-virus-deployable",

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { isAdminUsername } from "@/lib/admin";
 import { validateAbilityData } from "@/lib/game/card-submissions";
 import { rarityValues } from "@/lib/game/rarities";
+import { normalizeTraits } from "@/lib/game/traits";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 import type { Database, Json } from "@/types/supabase";
 
@@ -26,6 +27,7 @@ const reviewSchema = z.discriminatedUnion("action", [
       imageUrl: z.string().default(""),
       soundEffectUrl: z.string().default(""),
       flavorText: z.string().default(""),
+      traits: z.array(z.string()).default([]),
       abilityData: z.array(z.unknown()).default([]),
     }),
   }),
@@ -99,6 +101,7 @@ export async function PATCH(request: Request, context: RouteContext<"/api/admin/
       image_url: approvedImage?.publicUrl ?? card.imageUrl,
       sound_effect_url: approvedSound?.publicUrl ?? card.soundEffectUrl ?? "",
       flavor_text: card.flavorText,
+      traits: normalizeTraits(card.traits),
       ability_data: abilityData as Json,
       balance_version: "prototype-0.1",
     },
@@ -128,6 +131,7 @@ export async function PATCH(request: Request, context: RouteContext<"/api/admin/
       image_path: approvedImage?.path ?? (card.imageUrl === submission.data.image_url ? submission.data.image_path : null),
       sound_effect_url: approvedSound?.publicUrl ?? card.soundEffectUrl ?? "",
       sound_effect_path: approvedSound?.path ?? (card.soundEffectUrl === submission.data.sound_effect_url ? submission.data.sound_effect_path : null),
+      traits: normalizeTraits(card.traits),
       flavor_text: card.flavorText,
       ability_data: abilityData as Json,
     })

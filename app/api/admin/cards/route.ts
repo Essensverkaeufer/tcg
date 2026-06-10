@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminUsername } from "@/lib/admin";
 import { rarityValues } from "@/lib/game/rarities";
+import { normalizeTraits } from "@/lib/game/traits";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 import type { Json } from "@/types/supabase";
 
@@ -18,6 +19,7 @@ const cardSchema = z.object({
   imageUrl: z.string().default(""),
   soundEffectUrl: z.string().default(""),
   flavorText: z.string().default(""),
+  traits: z.array(z.string()).default([]),
   abilityData: z.array(z.unknown()).default([]),
 });
 
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
       image_url: card.imageUrl,
       sound_effect_url: card.soundEffectUrl || "",
       flavor_text: card.flavorText,
+      traits: normalizeTraits(card.traits),
       ability_data: card.abilityData as Json,
       balance_version: "prototype-0.1",
     },

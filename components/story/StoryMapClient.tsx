@@ -19,6 +19,8 @@ type StoryProgressEncounter = {
   losses: number;
   bestTurns: number | null;
   boss?: boolean;
+  firstClearCoins: number;
+  replayCoins: number;
 };
 
 export function StoryMapClient() {
@@ -119,6 +121,9 @@ function EncounterNode({ encounter, index }: { encounter: StoryProgressEncounter
         <span>Wins {encounter.wins}</span>
         <span>Losses {encounter.losses}</span>
         {encounter.bestTurns ? <span>Best {encounter.bestTurns}T</span> : null}
+      </div>
+      <div className="mt-3 rounded-md border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-[10px] font-black uppercase text-amber-100">
+        {completed ? `Replay +${encounter.replayCoins} coins` : `First clear +${encounter.firstClearCoins} coins`}
       </div>
       <div className="mt-3 rounded-md bg-white/10 px-3 py-2 text-center text-xs font-black">
         {locked ? "Locked" : completed ? "Replay" : encounter.boss ? "Final Boss" : "Start"}

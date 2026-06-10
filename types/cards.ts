@@ -106,6 +106,7 @@ export type CardTemplate = {
   size: number;
   aura: number;
   category?: string;
+  traits?: string[];
   imageUrl: string;
   soundEffectUrl?: string;
   dropEnabled?: boolean;

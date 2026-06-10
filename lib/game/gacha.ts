@@ -33,7 +33,18 @@ export const pillowNecrpGachaBanner: GachaBanner = {
   allowedPullCounts: [1, 10] as const,
 };
 
-export const gachaBanners = [necrpTuffGachaBanner, pillowNecrpGachaBanner] as const;
+export const traitFoundationsGachaBanner: GachaBanner = {
+  slug: "trait-foundations-constellation",
+  name: "Trait Foundations Constellation",
+  subtitle: "A support banner for trait-based deckbuilding and hidden combo hunting.",
+  featuredSlug: "trait-foundation-map",
+  featuredLabel: "Trait Foundation Map",
+  pricePerPull: 100,
+  hardPity: 100,
+  allowedPullCounts: [1, 10] as const,
+};
+
+export const gachaBanners = [necrpTuffGachaBanner, pillowNecrpGachaBanner, traitFoundationsGachaBanner] as const;
 
 export const defaultGachaBanner = necrpTuffGachaBanner;
 

@@ -1,4 +1,5 @@
 import { dealDamage, drawCards, findCard, getAbilityConditionError, getAbilityCooldownRemaining, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
+import { shareVisibleTrait } from "@/lib/game/traits";
 import type { CardTemplate } from "@/types/cards";
 import type { BattleVisualEvent, CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
 
@@ -247,7 +248,7 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
 
     if (card.template.cardType === "ITEM") {
       const target = [player.leader, ...player.board].find((entry) => entry.instanceId === action.targetInstanceId)!;
-      const comboMultiplier = getItemComboMultiplier(card.template, target.template);
+      const comboMultiplier = getItemComboMultiplier(card.template, target.template, player.leader.template);
       const attackBuff = card.currentAttack * comboMultiplier;
       const healthBuff = card.currentHealth * comboMultiplier;
       const auraBuff = card.currentAura * comboMultiplier;
@@ -572,16 +573,17 @@ function getEnergyForPlayerTurn(state: MatchState, player: MatchPlayerState) {
   return Math.min(MAX_ENERGY, normalEnergy + secondPlayerBonus);
 }
 
-function getItemComboMultiplier(item: CardTemplate, target: CardTemplate) {
+function getItemComboMultiplier(item: CardTemplate, target: CardTemplate, leader?: CardTemplate) {
   if (item.slug === "zubr-beer" && target.slug === "necrps-drunken-dad") return 2;
   if (item.slug === "white-monster" && target.slug === "mwyi") return 2;
   if (item.slug === "the-bong" && target.slug === "garrett-prime") return 2;
   if (item.slug === "assault-rifle" && target.cardType === "CHARACTER" && isAmericanCard(target)) return 2;
+  if (item.slug === "trait-foundation-map" && leader && target.cardType === "CHARACTER" && shareVisibleTrait(target, leader)) return 2;
   return 1;
 }
 
 function isAmericanCard(card: CardTemplate) {
-  return card.category?.toUpperCase() === "AMERICAN";
+  return card.category?.toUpperCase() === "AMERICAN" || card.traits?.some((trait) => trait.toUpperCase() === "AMERICAN");
 }
 
 function instantiateCard(template: CardTemplate, ownerId: string, zone: CardInstance["zone"], index: number, options: { deterministic?: boolean; seed?: string }): CardInstance {
