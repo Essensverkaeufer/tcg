@@ -1,7 +1,7 @@
 import { getAbilityCooldownRemaining } from "@/lib/game/abilities/engine";
 import { ATTACK_ENERGY_COST, getCardCost, validateAction } from "@/lib/game/match/state";
 import type { StoryBotPersonality, StoryDifficulty } from "@/lib/game/story/config";
-import { getVisibleTraits, shareVisibleTrait } from "@/lib/game/traits";
+import { getVisibleTraits } from "@/lib/game/traits";
 import type { AbilityDefinition, AbilityEffect, CardTemplate } from "@/types/cards";
 import type { CardInstance, MatchAction, MatchPlayerState, MatchState } from "@/types/match";
 
@@ -176,7 +176,7 @@ function scoreItemPlay(
   difficulty: StoryDifficulty,
   personality: StoryBotPersonality,
 ) {
-  const multiplier = getItemSynergyMultiplier(item.template, target.template, bot.leader.template);
+  const multiplier = getItemSynergyMultiplier(item.template, target.template);
   const buffValue = (item.currentAttack * 4 + item.currentHealth * 2 + item.currentAura * 2) * multiplier;
   const targetValue = scoreCard(target, difficulty, personality);
   const targetDamaged = target.currentHealth < target.currentMaxHealth;
@@ -302,12 +302,11 @@ function playCurveBonus(card: CardInstance, bot: MatchPlayerState, difficulty: S
   return bonus;
 }
 
-function getItemSynergyMultiplier(item: CardTemplate, target: CardTemplate, leader: CardTemplate) {
+function getItemSynergyMultiplier(item: CardTemplate, target: CardTemplate) {
   if (item.slug === "zubr-beer" && target.slug === "necrps-drunken-dad") return 2;
   if (item.slug === "white-monster" && target.slug === "mwyi") return 2;
   if (item.slug === "the-bong" && target.slug === "garrett-prime") return 2;
   if (item.slug === "assault-rifle" && target.cardType === "CHARACTER" && isAmericanCard(target)) return 2;
-  if (item.slug === "trait-foundation-map" && target.cardType === "CHARACTER" && shareVisibleTrait(target, leader)) return 2;
   return 1;
 }
 
