@@ -613,10 +613,10 @@ function clearExpiredStatuses(card: CardInstance, turn: number) {
 }
 
 function shuffle<T>(items: T[], options: { deterministic?: boolean; seed?: string }, salt: string) {
-  if (options.deterministic) return items;
   const copy = [...items];
   for (let index = copy.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(seededNumber(`${options.seed ?? "match"}:${salt}:shuffle:${index}`) * (index + 1));
+    const randomValue = seededNumber(`${options.seed ?? "match"}:${salt}:shuffle:${index}`);
+    const swapIndex = Math.floor(randomValue * (index + 1));
     [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
   }
   return copy;

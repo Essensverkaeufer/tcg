@@ -288,6 +288,34 @@ function deck(prefix: string) {
   return [leader, ...Array.from({ length: 29 }, (_, index) => unit(`${prefix}-${index}`, 1, 2))];
 }
 
+function takeCardFromPlayer(match: ReturnType<typeof createMatchState>, playerIndex: number, slug: string) {
+  const player = match.players[playerIndex];
+  const handCard = player.hand.find((card) => card.template.slug === slug);
+  if (handCard) {
+    player.hand = player.hand.filter((card) => card.instanceId !== handCard.instanceId);
+    return handCard;
+  }
+
+  const deckCard = player.deck.find((card) => card.template.slug === slug);
+  if (!deckCard) throw new Error(`Expected ${slug} in player ${playerIndex}'s hand or deck.`);
+  player.deck = player.deck.filter((card) => card.instanceId !== deckCard.instanceId);
+  return deckCard;
+}
+
+function putCardInHand(match: ReturnType<typeof createMatchState>, playerIndex: number, slug: string) {
+  const card = takeCardFromPlayer(match, playerIndex, slug);
+  card.zone = "HAND";
+  match.players[playerIndex].hand.push(card);
+  return card;
+}
+
+function putCardOnBoard(match: ReturnType<typeof createMatchState>, playerIndex: number, slug: string) {
+  const card = takeCardFromPlayer(match, playerIndex, slug);
+  card.zone = "BOARD";
+  match.players[playerIndex].board.push(card);
+  return card;
+}
+
 const first = createMatchState(
   "seeded",
   { id: "a", name: "A", deck: deck("a") },
@@ -303,6 +331,7 @@ const second = createMatchState(
 
 assert.deepEqual(first.players[0].deck.map((card) => card.template.slug), second.players[0].deck.map((card) => card.template.slug), "same seed should produce same player A deck order");
 assert.deepEqual(first.players[1].deck.map((card) => card.template.slug), second.players[1].deck.map((card) => card.template.slug), "same seed should produce same player B deck order");
+assert.notDeepEqual([...first.players[0].hand, ...first.players[0].deck].map((card) => card.template.slug), deck("a").filter((card) => card.cardType !== "LEADER").map((card) => card.slug), "match setup should shuffle cards instead of keeping the saved deck order");
 
 const view = createMatchView(first, "a");
 assert.equal(view.players[0].hand.some(isHiddenCard), false, "viewer hand should be visible");
@@ -431,11 +460,9 @@ function comboState(target: CardTemplate, itemCard: CardTemplate) {
     { id: "b", name: "B", deck: deck("b-combo") },
     { seed: `${target.slug}-${itemCard.slug}-seed`, deterministic: true },
   );
-  const stagedTarget = match.players[0].hand.find((card) => card.template.slug === target.slug)!;
-  match.players[0].hand = match.players[0].hand.filter((card) => card.instanceId !== stagedTarget.instanceId);
-  stagedTarget.zone = "BOARD";
+  const stagedTarget = putCardOnBoard(match, 0, target.slug);
   stagedTarget.enteredTurn = 0;
-  match.players[0].board.push(stagedTarget);
+  putCardInHand(match, 0, itemCard.slug);
   match.players[0].energyCurrent = 10;
   return match;
 }
@@ -516,13 +543,10 @@ let wokeDeployState = createMatchState(
   { seed: "woke-deploy-safe-seed", deterministic: true },
 );
 for (const slug of ["deploy-board-a", "deploy-board-b"]) {
-  const staged = wokeDeployState.players[0].hand.find((card) => card.template.slug === slug)!;
-  wokeDeployState.players[0].hand = wokeDeployState.players[0].hand.filter((card) => card.instanceId !== staged.instanceId);
-  staged.zone = "BOARD";
-  wokeDeployState.players[0].board.push(staged);
+  putCardOnBoard(wokeDeployState, 0, slug);
 }
 wokeDeployState.players[0].energyCurrent = 10;
-const safeWokeItem = wokeDeployState.players[0].hand.find((card) => card.template.slug === "woke-deployable-0")!;
+const safeWokeItem = putCardInHand(wokeDeployState, 0, "woke-deployable-0");
 wokeDeployState = applyAction(wokeDeployState, {
   type: "PLAY_CARD",
   playerId: "a",
@@ -553,13 +577,10 @@ let wokeDeployDoomState = createMatchState(
   { seed: "woke-deploy-doom-seed", deterministic: true },
 );
 for (const slug of ["doom-board-a", "doom-board-b"]) {
-  const staged = wokeDeployDoomState.players[0].hand.find((card) => card.template.slug === slug)!;
-  wokeDeployDoomState.players[0].hand = wokeDeployDoomState.players[0].hand.filter((card) => card.instanceId !== staged.instanceId);
-  staged.zone = "BOARD";
-  wokeDeployDoomState.players[0].board.push(staged);
+  putCardOnBoard(wokeDeployDoomState, 0, slug);
 }
 wokeDeployDoomState.players[0].energyCurrent = 10;
-const doomWokeItem = wokeDeployDoomState.players[0].hand.find((card) => card.template.slug === "woke-deployable-1")!;
+const doomWokeItem = putCardInHand(wokeDeployDoomState, 0, "woke-deployable-1");
 wokeDeployDoomState = applyAction(wokeDeployDoomState, {
   type: "PLAY_CARD",
   playerId: "a",
@@ -577,14 +598,10 @@ const protectedState = createMatchState(
   { id: "b", name: "B", deck: [leader, building("wall", 0, 5), ...Array.from({ length: 9 }, (_, index) => unit(`b-extra-${index}`))] },
   { seed: "building-protect-seed", deterministic: true },
 );
-const attacker = protectedState.players[0].hand.find((card) => card.template.slug === "attacker")!;
-attacker.zone = "BOARD";
+const attacker = putCardOnBoard(protectedState, 0, "attacker");
 attacker.enteredTurn = 0;
 attacker.exhausted = false;
-protectedState.players[0].board.push(attacker);
-const wall = protectedState.players[1].hand.find((card) => card.template.slug === "wall")!;
-wall.zone = "BOARD";
-protectedState.players[1].board.push(wall);
+const wall = putCardOnBoard(protectedState, 1, "wall");
 protectedState.players[0].energyCurrent = 0;
 assert.deepEqual(validateAction(protectedState, {
   type: "ATTACK",
@@ -624,16 +641,11 @@ const botProtectedState = createMatchState(
   { id: "story-bot", name: "Bot", deck: [leader, unit("bot-attacker", 6, 5), ...Array.from({ length: 9 }, (_, index) => unit(`bot-wall-extra-${index}`))] },
   { seed: "story-bot-building-protect-seed", deterministic: true },
 );
-const botWall = botProtectedState.players[0].hand.find((card) => card.template.slug === "player-wall")!;
-botProtectedState.players[0].hand = botProtectedState.players[0].hand.filter((card) => card.instanceId !== botWall.instanceId);
-botWall.zone = "BOARD";
-botProtectedState.players[0].board.push(botWall);
-const botAttacker = botProtectedState.players[1].hand.find((card) => card.template.slug === "bot-attacker")!;
+const botWall = putCardOnBoard(botProtectedState, 0, "player-wall");
+const botAttacker = putCardOnBoard(botProtectedState, 1, "bot-attacker");
 botProtectedState.players[1].hand = [];
-botAttacker.zone = "BOARD";
 botAttacker.enteredTurn = 0;
 botAttacker.exhausted = false;
-botProtectedState.players[1].board.push(botAttacker);
 botProtectedState.activePlayerId = "story-bot";
 botProtectedState.players[1].energyCurrent = 3;
 const botAttackAction = chooseBotAction(botProtectedState, "story-bot", "HARD");
@@ -671,13 +683,8 @@ let randomCharacterDestroyState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("random-destroy-target", 1, 6), building("random-destroy-building", 0, 10), ...Array.from({ length: 8 }, (_, index) => unit(`random-destroy-extra-${index}`))] },
   { seed: "random-character-destroy-seed", deterministic: true },
 );
-const randomDestroyTarget = randomCharacterDestroyState.players[1].hand.find((card) => card.template.slug === "random-destroy-target")!;
-const randomDestroyBuilding = randomCharacterDestroyState.players[1].hand.find((card) => card.template.slug === "random-destroy-building")!;
-for (const card of [randomDestroyTarget, randomDestroyBuilding]) {
-  randomCharacterDestroyState.players[1].hand = randomCharacterDestroyState.players[1].hand.filter((entry) => entry.instanceId !== card.instanceId);
-  card.zone = "BOARD";
-  randomCharacterDestroyState.players[1].board.push(card);
-}
+putCardOnBoard(randomCharacterDestroyState, 1, "random-destroy-target");
+putCardOnBoard(randomCharacterDestroyState, 1, "random-destroy-building");
 const randomDestroyLeaderHealth = randomCharacterDestroyState.players[1].leader.currentHealth;
 randomCharacterDestroyState = applyAction(randomCharacterDestroyState, {
   type: "USE_ABILITY",
@@ -734,15 +741,9 @@ let coinHeadsState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("enemy-heads-target"), ...Array.from({ length: 9 }, (_, index) => unit(`b-coin-heads-extra-${index}`))] },
   { seed: "coin-tails", deterministic: true },
 );
-const headsSource = coinHeadsState.players[0].hand.find((card) => card.template.slug === "coin-heads-unit")!;
-coinHeadsState.players[0].hand = coinHeadsState.players[0].hand.filter((card) => card.instanceId !== headsSource.instanceId);
-headsSource.zone = "BOARD";
+const headsSource = putCardOnBoard(coinHeadsState, 0, "coin-heads-unit");
 headsSource.enteredTurn = 0;
-coinHeadsState.players[0].board.push(headsSource);
-const headsEnemy = coinHeadsState.players[1].hand.find((card) => card.template.slug === "enemy-heads-target")!;
-coinHeadsState.players[1].hand = coinHeadsState.players[1].hand.filter((card) => card.instanceId !== headsEnemy.instanceId);
-headsEnemy.zone = "BOARD";
-coinHeadsState.players[1].board.push(headsEnemy);
+putCardOnBoard(coinHeadsState, 1, "enemy-heads-target");
 coinHeadsState = applyAction(coinHeadsState, {
   type: "USE_ABILITY",
   playerId: coinHeadsState.players[0].playerId,
@@ -759,11 +760,8 @@ let coinTailsState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("enemy-tails-target"), ...Array.from({ length: 9 }, (_, index) => unit(`b-coin-tails-extra-${index}`))] },
   { seed: "coin-heads", deterministic: true },
 );
-const tailsSource = coinTailsState.players[0].hand.find((card) => card.template.slug === "coin-tails-unit")!;
-coinTailsState.players[0].hand = coinTailsState.players[0].hand.filter((card) => card.instanceId !== tailsSource.instanceId);
-tailsSource.zone = "BOARD";
+const tailsSource = putCardOnBoard(coinTailsState, 0, "coin-tails-unit");
 tailsSource.enteredTurn = 0;
-coinTailsState.players[0].board.push(tailsSource);
 coinTailsState = applyAction(coinTailsState, {
   type: "USE_ABILITY",
   playerId: coinTailsState.players[0].playerId,
@@ -779,15 +777,9 @@ let cooldownState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("cooldown-target", 1, 5), ...Array.from({ length: 9 }, (_, index) => unit(`b-cooldown-extra-${index}`))] },
   { seed: "cooldown-seed", deterministic: true },
 );
-const cooldownSource = cooldownState.players[0].hand.find((card) => card.template.slug === "cooldown-unit")!;
-cooldownState.players[0].hand = cooldownState.players[0].hand.filter((card) => card.instanceId !== cooldownSource.instanceId);
-cooldownSource.zone = "BOARD";
+const cooldownSource = putCardOnBoard(cooldownState, 0, "cooldown-unit");
 cooldownSource.enteredTurn = 0;
-cooldownState.players[0].board.push(cooldownSource);
-const cooldownTarget = cooldownState.players[1].hand.find((card) => card.template.slug === "cooldown-target")!;
-cooldownState.players[1].hand = cooldownState.players[1].hand.filter((card) => card.instanceId !== cooldownTarget.instanceId);
-cooldownTarget.zone = "BOARD";
-cooldownState.players[1].board.push(cooldownTarget);
+putCardOnBoard(cooldownState, 1, "cooldown-target");
 cooldownState = applyAction(cooldownState, {
   type: "USE_ABILITY",
   playerId: cooldownState.players[0].playerId,
@@ -826,14 +818,9 @@ let tuffState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("enemy-character-a", 1, 10), unit("enemy-character-b", 1, 10), building("enemy-building", 0, 10), ...Array.from({ length: 8 }, (_, index) => unit(`b-tuff-extra-${index}`))] },
   { seed: "necrp-tuff-seed", deterministic: true },
 );
-const tuffEnemyA = tuffState.players[1].hand.find((card) => card.template.slug === "enemy-character-a")!;
-const tuffEnemyB = tuffState.players[1].hand.find((card) => card.template.slug === "enemy-character-b")!;
-const tuffBuilding = tuffState.players[1].hand.find((card) => card.template.slug === "enemy-building")!;
-for (const card of [tuffEnemyA, tuffEnemyB, tuffBuilding]) {
-  tuffState.players[1].hand = tuffState.players[1].hand.filter((entry) => entry.instanceId !== card.instanceId);
-  card.zone = "BOARD";
-  tuffState.players[1].board.push(card);
-}
+putCardOnBoard(tuffState, 1, "enemy-character-a");
+putCardOnBoard(tuffState, 1, "enemy-character-b");
+putCardOnBoard(tuffState, 1, "enemy-building");
 const tuffLeaderHp = tuffState.players[1].leader.currentHealth;
 tuffState = applyAction(tuffState, {
   type: "USE_ABILITY",
@@ -871,14 +858,8 @@ const basementBlockedState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("trap-target", 1, 6), ...Array.from({ length: 10 }, (_, index) => unit(`b-basement-blocked-extra-${index}`))] },
   { seed: "jpjs-basement-blocked-seed", deterministic: true },
 );
-const blockedBasement = basementBlockedState.players[0].hand.find((card) => card.template.slug === "jpjs-basement")!;
-basementBlockedState.players[0].hand = basementBlockedState.players[0].hand.filter((card) => card.instanceId !== blockedBasement.instanceId);
-blockedBasement.zone = "BOARD";
-basementBlockedState.players[0].board.push(blockedBasement);
-const blockedTrapTarget = basementBlockedState.players[1].hand.find((card) => card.template.slug === "trap-target")!;
-basementBlockedState.players[1].hand = basementBlockedState.players[1].hand.filter((card) => card.instanceId !== blockedTrapTarget.instanceId);
-blockedTrapTarget.zone = "BOARD";
-basementBlockedState.players[1].board.push(blockedTrapTarget);
+const blockedBasement = putCardOnBoard(basementBlockedState, 0, "jpjs-basement");
+const blockedTrapTarget = putCardOnBoard(basementBlockedState, 1, "trap-target");
 assert.deepEqual(validateAction(basementBlockedState, {
   type: "USE_ABILITY",
   playerId: basementBlockedState.players[0].playerId,
@@ -893,14 +874,8 @@ let basementState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("trap-target", 1, 6), ...Array.from({ length: 10 }, (_, index) => unit(`b-basement-extra-${index}`))] },
   { seed: "jpjs-basement-seed", deterministic: true },
 );
-const basement = basementState.players[0].hand.find((card) => card.template.slug === "jpjs-basement")!;
-basementState.players[0].hand = basementState.players[0].hand.filter((card) => card.instanceId !== basement.instanceId);
-basement.zone = "BOARD";
-basementState.players[0].board.push(basement);
-const trapTarget = basementState.players[1].hand.find((card) => card.template.slug === "trap-target")!;
-basementState.players[1].hand = basementState.players[1].hand.filter((card) => card.instanceId !== trapTarget.instanceId);
-trapTarget.zone = "BOARD";
-basementState.players[1].board.push(trapTarget);
+const basement = putCardOnBoard(basementState, 0, "jpjs-basement");
+const trapTarget = putCardOnBoard(basementState, 1, "trap-target");
 basementState = applyAction(basementState, {
   type: "USE_ABILITY",
   playerId: basementState.players[0].playerId,
@@ -917,10 +892,7 @@ let vanessaState = createMatchState(
   { id: "b", name: "B", deck: deck("b-vanessa") },
   { seed: "vanessa-heartbroken-seed", deterministic: true },
 );
-const vanessa = vanessaState.players[0].hand.find((card) => card.template.slug === "vanessa")!;
-vanessaState.players[0].hand = vanessaState.players[0].hand.filter((card) => card.instanceId !== vanessa.instanceId);
-vanessa.zone = "BOARD";
-vanessaState.players[0].board.push(vanessa);
+const vanessa = putCardOnBoard(vanessaState, 0, "vanessa");
 vanessaState = applyAction(vanessaState, {
   type: "USE_ABILITY",
   playerId: vanessaState.players[0].playerId,
@@ -936,10 +908,7 @@ const vanessaBlockedState = createMatchState(
   { id: "b", name: "B", deck: deck("b-vanessa-blocked") },
   { seed: "vanessa-heartbroken-blocked-seed", deterministic: true },
 );
-const blockedVanessa = vanessaBlockedState.players[0].hand.find((card) => card.template.slug === "vanessa")!;
-vanessaBlockedState.players[0].hand = vanessaBlockedState.players[0].hand.filter((card) => card.instanceId !== blockedVanessa.instanceId);
-blockedVanessa.zone = "BOARD";
-vanessaBlockedState.players[0].board.push(blockedVanessa);
+const blockedVanessa = putCardOnBoard(vanessaBlockedState, 0, "vanessa");
 assert.deepEqual(validateAction(vanessaBlockedState, {
   type: "USE_ABILITY",
   playerId: vanessaBlockedState.players[0].playerId,
@@ -953,11 +922,8 @@ let flexState = createMatchState(
   { id: "b", name: "B", deck: [leader, unit("flex-target", 2, 6), ...Array.from({ length: 9 }, (_, index) => unit(`b-flex-extra-${index}`))] },
   { seed: "garrett-flex-seed", deterministic: true },
 );
-const flexTarget = flexState.players[1].hand.find((card) => card.template.slug === "flex-target")!;
-flexState.players[1].hand = flexState.players[1].hand.filter((card) => card.instanceId !== flexTarget.instanceId);
-flexTarget.zone = "BOARD";
+const flexTarget = putCardOnBoard(flexState, 1, "flex-target");
 flexTarget.enteredTurn = 0;
-flexState.players[1].board.push(flexTarget);
 flexState = applyAction(flexState, {
   type: "USE_ABILITY",
   playerId: flexState.players[0].playerId,
