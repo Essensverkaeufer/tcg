@@ -624,7 +624,20 @@ export const cardCatalog: CardTemplate[] = [
     imageUrl: `${supabaseCardArtBase}/woke-charlie-kirk-chapter-3-leader.webp`,
     soundEffectUrl: `${supabaseSoundBase}/woke-charlie-kirk-chapter-3-leader.mp3`,
     dropEnabled: false,
-    abilityData: [],
+    abilityData: [
+      {
+        id: "woke-charlie-kirk-platform-shift",
+        label: "Platform Shift",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        cooldownTurns: 3,
+        effects: [
+          { type: "DAMAGE", target: "ENEMY_BOARD_CHARACTERS", amount: 3 },
+          { type: "BLIND", target: "ENEMY_CHARACTER", amount: 1, duration: "TURN" },
+          { type: "BUFF_AURA", target: "SELF", amount: 2, duration: "PERMANENT" },
+        ],
+      },
+    ],
   },
   {
     slug: "king-von-chapter-3-leader",
@@ -641,7 +654,19 @@ export const cardCatalog: CardTemplate[] = [
     imageUrl: `${supabaseCardArtBase}/king-von-chapter-3-leader.webp`,
     soundEffectUrl: `${supabaseSoundBase}/king-von-chapter-3-leader.mp3`,
     dropEnabled: false,
-    abilityData: [],
+    abilityData: [
+      {
+        id: "king-von-pressure-story",
+        label: "Story Pressure",
+        trigger: "ACTIVATED",
+        requiresTarget: true,
+        cooldownTurns: 2,
+        effects: [
+          { type: "DAMAGE", target: "ENEMY_CHARACTER", amount: 8 },
+          { type: "BUFF_ATTACK", target: "SELF", amount: 1, duration: "PERMANENT" },
+        ],
+      },
+    ],
   },
   {
     slug: "shrekel-not-in-poland-chapter-3-leader",
@@ -658,7 +683,20 @@ export const cardCatalog: CardTemplate[] = [
     imageUrl: `${supabaseCardArtBase}/shrekel-not-in-poland-chapter-3-leader.webp`,
     soundEffectUrl: `${supabaseSoundBase}/shrekel-not-in-poland-chapter-3-leader.mp3`,
     dropEnabled: false,
-    abilityData: [],
+    abilityData: [
+      {
+        id: "shrekel-not-in-poland-swamp-tax",
+        label: "Swamp Tax",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        cooldownTurns: 3,
+        effects: [
+          { type: "HEAL", target: "SELF", amount: 10 },
+          { type: "SHIELD", target: "SELF" },
+          { type: "STUN", target: "ENEMY_CHARACTER", amount: 1, duration: "TURN" },
+        ],
+      },
+    ],
   },
   {
     slug: "kanye-west-chapter-3-leader",

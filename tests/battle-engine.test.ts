@@ -776,6 +776,59 @@ for (const slug of [
   assert.equal(cardCatalog.find((card) => card.slug === slug)?.dropEnabled, false, `${slug} should not drop from packs`);
 }
 
+let wokeCharlieState = createMatchState(
+  "woke-charlie-feature",
+  { id: "a", name: "A", deck: [cardCatalog.find((card) => card.slug === "woke-charlie-kirk-chapter-3-leader")!, ...Array.from({ length: 10 }, (_, index) => unit(`a-woke-charlie-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("woke-charlie-target-a", 1, 8), unit("woke-charlie-target-b", 1, 8), ...Array.from({ length: 10 }, (_, index) => unit(`b-woke-charlie-extra-${index}`))] },
+  { seed: "woke-charlie-feature-seed", deterministic: true },
+);
+putCardOnBoard(wokeCharlieState, 1, "woke-charlie-target-a");
+putCardOnBoard(wokeCharlieState, 1, "woke-charlie-target-b");
+wokeCharlieState = applyAction(wokeCharlieState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: wokeCharlieState.players[0].leader.instanceId,
+  abilityId: "woke-charlie-kirk-platform-shift",
+});
+assert.equal(wokeCharlieState.players[1].board.every((card) => card.currentHealth === 5), true, "Platform Shift should damage every enemy character");
+assert.equal(wokeCharlieState.players[1].board.some((card) => (card.blindedUntilTurn ?? 0) > wokeCharlieState.turn), true, "Platform Shift should blind one enemy character");
+assert.equal(wokeCharlieState.players[0].leader.currentAura, 14, "Platform Shift should permanently increase Woke Charlie aura");
+
+let kingVonState = createMatchState(
+  "king-von-feature",
+  { id: "a", name: "A", deck: [cardCatalog.find((card) => card.slug === "king-von-chapter-3-leader")!, ...Array.from({ length: 10 }, (_, index) => unit(`a-king-von-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("king-von-target", 1, 10), ...Array.from({ length: 10 }, (_, index) => unit(`b-king-von-extra-${index}`))] },
+  { seed: "king-von-feature-seed", deterministic: true },
+);
+const kingTarget = putCardOnBoard(kingVonState, 1, "king-von-target");
+kingVonState = applyAction(kingVonState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: kingVonState.players[0].leader.instanceId,
+  abilityId: "king-von-pressure-story",
+  targetInstanceId: kingTarget.instanceId,
+});
+assert.equal(kingVonState.players[1].board[0].currentHealth, 2, "Story Pressure should heavily damage the selected enemy character");
+assert.equal(kingVonState.players[0].leader.currentAttack, 15, "Story Pressure should increase King Von attack");
+
+let shrekelState = createMatchState(
+  "shrekel-feature",
+  { id: "a", name: "A", deck: [cardCatalog.find((card) => card.slug === "shrekel-not-in-poland-chapter-3-leader")!, ...Array.from({ length: 10 }, (_, index) => unit(`a-shrekel-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("shrekel-target", 1, 10), ...Array.from({ length: 10 }, (_, index) => unit(`b-shrekel-extra-${index}`))] },
+  { seed: "shrekel-feature-seed", deterministic: true },
+);
+putCardOnBoard(shrekelState, 1, "shrekel-target");
+shrekelState.players[0].leader.currentHealth -= 20;
+shrekelState = applyAction(shrekelState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: shrekelState.players[0].leader.instanceId,
+  abilityId: "shrekel-not-in-poland-swamp-tax",
+});
+assert.equal(shrekelState.players[0].leader.currentHealth, shrekelState.players[0].leader.currentMaxHealth - 10, "Swamp Tax should heal Shrekel");
+assert.equal(shrekelState.players[0].leader.shielded, true, "Swamp Tax should shield Shrekel");
+assert.equal(shrekelState.players[1].board.some((card) => (card.stunnedUntilTurn ?? 0) > shrekelState.turn), true, "Swamp Tax should stun one enemy character");
+
 let consumeState = createMatchState(
   "consume",
   { id: "a", name: "A", deck: [cardCatalog.find((card) => card.slug === "anarchy-gluttonous-chapter-3-leader")!, ...Array.from({ length: 10 }, (_, index) => unit(`a-consume-extra-${index}`))] },

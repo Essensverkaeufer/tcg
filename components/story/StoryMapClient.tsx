@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import Link from "next/link";
-import { Castle, Check, Lock, Skull, Swords } from "lucide-react";
+import { Check, Lock, Skull, Swords } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import type { StoryDifficulty, StoryProgressStatus } from "@/lib/game/story/config";
@@ -78,8 +78,8 @@ function ChapterPath({ title, encounters }: { title: string; encounters: StoryPr
     <section className="story-chapter-enter overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,#451a35_0%,#111827_48%,#020617_100%)] p-4 shadow-2xl shadow-rose-950/30 sm:p-6">
       <h2 className="text-lg font-black">{title}</h2>
       <div className="relative mt-6">
-        <div className="story-path-line absolute bottom-8 left-8 top-8 w-1 rounded-full bg-gradient-to-b from-emerald-400/30 via-amber-300/50 to-rose-500/50 md:left-8 md:right-8 md:top-1/2 md:h-1 md:w-auto md:-translate-y-1/2 md:bg-gradient-to-r" />
-        <div className="relative grid gap-4 md:grid-cols-3 xl:grid-cols-6 xl:gap-5">
+        <div className="story-path-line pointer-events-none absolute bottom-8 left-4 top-8 w-1 rounded-full bg-gradient-to-b from-emerald-400/30 via-amber-300/50 to-rose-500/50 md:left-6 md:right-6 md:top-1/2 md:h-1 md:w-auto md:-translate-y-1/2 md:bg-gradient-to-r" />
+        <div className="story-node-grid relative grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {encounters.map((encounter, index) => (
             <EncounterNode key={encounter.slug} encounter={encounter} index={index} />
           ))}
@@ -117,7 +117,7 @@ function EncounterNode({ encounter, index }: { encounter: StoryProgressEncounter
           <Icon className="h-5 w-5" aria-hidden />
         </span>
       </div>
-      <p className="mt-3 line-clamp-3 text-xs font-semibold text-slate-300">{encounter.description}</p>
+      <p className="mt-3 min-h-[4.5rem] text-xs font-semibold leading-5 text-slate-300">{encounter.description}</p>
       <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase text-slate-400">
         <span>Wins {encounter.wins}</span>
         <span>Losses {encounter.losses}</span>
@@ -133,15 +133,8 @@ function EncounterNode({ encounter, index }: { encounter: StoryProgressEncounter
   );
 
   return (
-    <div className={clsx(
-      "relative z-10 flex min-w-0 items-center gap-3 md:block",
-      index % 2 === 0 ? "xl:-translate-y-10" : "xl:translate-y-12",
-    )}>
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/10 bg-slate-950 shadow-lg md:mx-auto md:mb-3">
-        <Icon className="h-5 w-5" aria-hidden />
-      </div>
-      {locked ? content : <Link href={`/story/${encounter.slug}`} className="min-w-0 flex-1 md:block">{content}</Link>}
-      {encounter.boss ? <Castle className="mx-auto mt-2 h-8 w-8 text-rose-200" aria-hidden /> : null}
+    <div className={clsx("relative z-10 min-w-0", index % 2 === 1 && "2xl:mt-10")}>
+      {locked ? content : <Link href={`/story/${encounter.slug}`} className="block min-w-0">{content}</Link>}
     </div>
   );
 }
