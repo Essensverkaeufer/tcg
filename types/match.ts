@@ -46,6 +46,18 @@ export type CardInstance = {
   activatedThisTurn: string[];
   abilityCooldowns: Record<string, number>;
   attachedItems: CardInstance[];
+  temporaryEffects?: Array<{
+    id: string;
+    expiresOnOwnerTurn: number;
+    attack: number;
+    health: number;
+    size: number;
+    aura: number;
+    afterAttack: number;
+    afterHealth: number;
+    afterSize: number;
+    afterAura: number;
+  }>;
   blindedUntilTurn?: number;
   stunnedUntilTurn?: number;
   poisoned?: boolean;

@@ -34,8 +34,8 @@ export function getAbilityTargetError(state: MatchState, ability: AbilityDefinit
   return undefined;
 }
 
-export function getAbilityConditionError(state: MatchState, ability: AbilityDefinition, controllerId: string) {
-  const failedCondition = (ability.conditions ?? []).find((condition) => !conditionPasses(state, condition, controllerId));
+export function getAbilityConditionError(state: MatchState, ability: AbilityDefinition, controllerId: string, sourceInstanceId?: string) {
+  const failedCondition = (ability.conditions ?? []).find((condition) => !conditionPasses(state, condition, controllerId, sourceInstanceId));
   if (!failedCondition) return undefined;
 
   if (failedCondition.type === "CARD_IN_HAND") {
@@ -61,7 +61,7 @@ export function resolveTriggeredAbilities(state: MatchState, event: AbilityEvent
   for (const ability of source.template.abilityData) {
     if (ability.trigger !== event.trigger) continue;
     if (event.abilityId && ability.id !== event.abilityId) continue;
-    if (getAbilityConditionError(nextState, ability, event.controllerId)) continue;
+    if (getAbilityConditionError(nextState, ability, event.controllerId, source.instanceId)) continue;
     if (ability.oncePerGame && hasUsedOncePerGame(nextState, event.controllerId, ability.id)) continue;
     if (ability.trigger === "ACTIVATED" && source.activatedThisTurn.includes(ability.id)) continue;
     if (ability.trigger === "ACTIVATED") {
@@ -203,6 +203,46 @@ function applyEffect(
         }
         break;
       }
+      case "CONSUME": {
+        const gainedHealth = Math.max(0, getMaxHealth(target));
+        target.currentHealth = 0;
+        if (source) {
+          source.currentMaxHealth += gainedHealth;
+          source.currentHealth += gainedHealth;
+          messages.push(`${ability.label} consumed ${target.template.name} and gained ${gainedHealth} HP.`);
+        } else {
+          messages.push(`${ability.label} consumed ${target.template.name}.`);
+        }
+        {
+          const death = resolveTriggeredAbilities(nextState, {
+            trigger: "ON_DEATH",
+            source: target,
+            controllerId: target.ownerId,
+          });
+          nextState = death.state;
+          messages.push(...death.messages);
+        }
+        break;
+      }
+      case "TEMP_TRANSFORM": {
+        const transform = readTempTransform(effect);
+        applyStatDelta(target, transform.attack, transform.health, transform.size, transform.aura);
+        target.temporaryEffects ??= [];
+        target.temporaryEffects.push({
+          id: `${ability.id}-${nextState.turn}-${target.temporaryEffects.length}`,
+          expiresOnOwnerTurn: getPlayer(nextState, target.ownerId).turnsStarted + transform.ownerTurns,
+          attack: transform.attack,
+          health: transform.health,
+          size: transform.size,
+          aura: transform.aura,
+          afterAttack: transform.afterAttack,
+          afterHealth: transform.afterHealth,
+          afterSize: transform.afterSize,
+          afterAura: transform.afterAura,
+        });
+        messages.push(`${ability.label} transformed ${target.template.name} for ${transform.ownerTurns} turn(s).`);
+        break;
+      }
       case "SHIELD":
         target.shielded = true;
         messages.push(`${ability.label} shielded ${target.template.name}.`);
@@ -298,6 +338,7 @@ function resetCardForDeck(card: CardInstance): CardInstance {
     activatedThisTurn: [],
     abilityCooldowns: {},
     attachedItems: [],
+    temporaryEffects: [],
     blindedUntilTurn: undefined,
     stunnedUntilTurn: undefined,
     poisoned: undefined,
@@ -350,6 +391,9 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
       return [controller.leader];
     case "FRIENDLY_BOARD_AND_LEADER":
       return [controller.leader, ...controller.board].filter((card) => matchesCardSlug(card, effect.cardSlug));
+    case "ALL_IN_PLAY_EXCEPT_SELF":
+      return [controller.leader, ...controller.board, opponent.leader, ...opponent.board]
+        .filter((card) => card.instanceId !== event.source.instanceId && matchesCardSlug(card, effect.cardSlug));
     case "ENEMY_LEADER":
       return [opponent.leader];
     case "FRIENDLY_CHARACTER":
@@ -364,6 +408,12 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
         && matchesCardSlug(requestedTarget, effect.cardSlug)
         ? [requestedTarget]
         : opponent.board.filter((card) => card.template.cardType === "CHARACTER" && matchesCardSlug(card, effect.cardSlug)).slice(0, 1);
+    case "ENEMY_BOARD_CARD":
+      return requestedTarget && requestedTarget.ownerId === opponent.playerId && requestedTarget.zone === "BOARD"
+        && (requestedTarget.template.cardType === "CHARACTER" || requestedTarget.template.cardType === "BUILDING")
+        && matchesCardSlug(requestedTarget, effect.cardSlug)
+        ? [requestedTarget]
+        : opponent.board.filter((card) => (card.template.cardType === "CHARACTER" || card.template.cardType === "BUILDING") && matchesCardSlug(card, effect.cardSlug)).slice(0, 1);
     case "ENEMY_BOARD_CHARACTERS":
       return opponent.board.filter((card) => card.template.cardType === "CHARACTER" && matchesCardSlug(card, effect.cardSlug));
     case "ENEMY_BUILDING":
@@ -398,7 +448,7 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
 }
 
 function isEffectTargeted(effect: AbilityEffect) {
-  return !["SELF", "FRIENDLY_BOARD_AND_LEADER", "RANDOM_ENEMY", "RANDOM_ENEMY_CHARACTER", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
+  return !["SELF", "FRIENDLY_BOARD_AND_LEADER", "ALL_IN_PLAY_EXCEPT_SELF", "RANDOM_ENEMY", "RANDOM_ENEMY_CHARACTER", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
 }
 
 function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controllerId: string, target: CardInstance) {
@@ -412,6 +462,8 @@ function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controlle
       return target.instanceId === controller.leader.instanceId;
     case "FRIENDLY_BOARD_AND_LEADER":
       return target.instanceId === controller.leader.instanceId || (target.ownerId === controller.playerId && target.zone === "BOARD");
+    case "ALL_IN_PLAY_EXCEPT_SELF":
+      return target.zone === "BOARD";
     case "ENEMY_LEADER":
       return target.instanceId === opponent.leader.instanceId;
     case "FRIENDLY_CHARACTER":
@@ -420,6 +472,8 @@ function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controlle
     case "ENEMY_CHARACTER":
     case "ENEMY_BOARD_CHARACTERS":
       return target.ownerId === opponent.playerId && target.zone === "BOARD" && target.template.cardType === "CHARACTER";
+    case "ENEMY_BOARD_CARD":
+      return target.ownerId === opponent.playerId && target.zone === "BOARD" && (target.template.cardType === "CHARACTER" || target.template.cardType === "BUILDING");
     case "ENEMY_BUILDING":
       return target.ownerId === opponent.playerId && target.zone === "BOARD" && target.template.cardType === "BUILDING";
     case "ANY_CHARACTER":
@@ -446,6 +500,34 @@ function readCoinFlipEffects(effect: AbilityEffect, side: "heads" | "tails") {
   });
 }
 
+function readTempTransform(effect: AbilityEffect) {
+  const metadata = effect.metadata ?? {};
+  const readNumber = (key: string, fallback = 0) => {
+    const value = metadata[key];
+    return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  };
+
+  return {
+    ownerTurns: Math.max(1, readNumber("ownerTurns", effect.amount ?? 1)),
+    attack: readNumber("attack"),
+    health: readNumber("health"),
+    size: readNumber("size"),
+    aura: readNumber("aura"),
+    afterAttack: readNumber("afterAttack"),
+    afterHealth: readNumber("afterHealth"),
+    afterSize: readNumber("afterSize"),
+    afterAura: readNumber("afterAura"),
+  };
+}
+
+export function applyStatDelta(card: CardInstance, attack = 0, health = 0, size = 0, aura = 0) {
+  card.currentAttack = Math.max(0, card.currentAttack + attack);
+  card.currentMaxHealth = Math.max(1, card.currentMaxHealth + health);
+  card.currentHealth = Math.min(card.currentMaxHealth, Math.max(0, card.currentHealth + Math.max(0, health)));
+  card.currentSize = Math.max(0, card.currentSize + size);
+  card.currentAura = Math.max(0, card.currentAura + aura);
+}
+
 function nextRandom(state: MatchState) {
   const value = seededNumber(`${state.rngSeed}:${state.rngCounter}`);
   state.rngCounter += 1;
@@ -466,7 +548,7 @@ function seededNumber(seed: string) {
   return (hash >>> 0) / 4294967296;
 }
 
-function conditionPasses(state: MatchState, condition: AbilityCondition, controllerId: string) {
+function conditionPasses(state: MatchState, condition: AbilityCondition, controllerId: string, sourceInstanceId?: string) {
   const controller = getPlayer(state, controllerId);
 
   if (condition.type === "PLAYED_CARDS_THIS_TURN") {
@@ -485,6 +567,11 @@ function conditionPasses(state: MatchState, condition: AbilityCondition, control
   if (condition.type === "LEADER_IS") {
     const slugs = condition.cardSlugs ?? (condition.cardSlug ? [condition.cardSlug] : [String(condition.value ?? "")]);
     return slugs.includes(controller.leader.template.slug);
+  }
+
+  if (condition.type === "SELF_HEALTH_BELOW") {
+    const source = sourceInstanceId ? findCard(state, sourceInstanceId) : undefined;
+    return Boolean(source && source.currentHealth < Number(condition.value ?? 0));
   }
 
   return true;

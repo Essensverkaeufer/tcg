@@ -24,8 +24,10 @@ export type AbilityTarget =
   | "ALLY_CHARACTER"
   | "ALLY_LEADER"
   | "FRIENDLY_BOARD_AND_LEADER"
+  | "ALL_IN_PLAY_EXCEPT_SELF"
   | "ENEMY_BUILDING"
   | "ENEMY_CHARACTER"
+  | "ENEMY_BOARD_CARD"
   | "ENEMY_BOARD_CHARACTERS"
   | "ENEMY_LEADER"
   | "RANDOM_ENEMY"
@@ -45,6 +47,7 @@ export type EffectType =
   | "BUFF_SIZE"
   | "BUFF_AURA"
   | "CHANCE_DESTROY"
+  | "CONSUME"
   | "DRAW"
   | "DESTROY"
   | "SUMMON"
@@ -52,6 +55,7 @@ export type EffectType =
   | "STUN"
   | "BLIND"
   | "COIN_FLIP"
+  | "TEMP_TRANSFORM"
   | "COPY_ABILITY"
   | "REVIVE"
   | "TRANSFORM"
@@ -65,7 +69,8 @@ export type AbilityCondition = {
     | "ONCE_PER_GAME"
     | "RARITY_IN_HAND"
     | "CARD_IN_HAND"
-    | "LEADER_IS";
+    | "LEADER_IS"
+    | "SELF_HEALTH_BELOW";
   operator?: ">=" | "<=" | "==" | "!=";
   value?: number | string;
   cardSlug?: string;

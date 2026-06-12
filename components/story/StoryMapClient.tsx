@@ -11,7 +11,7 @@ type StoryProgressEncounter = {
   slug: string;
   name: string;
   description: string;
-  chapter: 1 | 2;
+  chapter: 1 | 2 | 3;
   difficulty: StoryDifficulty;
   position: { x: number; y: number };
   status: StoryProgressStatus;
@@ -63,6 +63,7 @@ export function StoryMapClient() {
           <div className="mt-8 grid gap-8">
             <ChapterPath title="Chapter 1: Road to the Woke Mind Virus" encounters={encounters.filter((encounter) => encounter.chapter === 1)} />
             <ChapterPath title="Chapter 2: Viral Aftermath" encounters={encounters.filter((encounter) => encounter.chapter === 2)} />
+            <ChapterPath title="Chapter 3: Collapse Buffet" encounters={encounters.filter((encounter) => encounter.chapter === 3)} />
           </div>
         </section>
       </main>

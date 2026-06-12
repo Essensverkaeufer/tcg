@@ -148,6 +148,21 @@ function cooldownUnit(slug: string): CardTemplate {
   };
 }
 
+function leaderDamageUnit(slug: string, amount: number): CardTemplate {
+  return {
+    ...unit(slug, 1, 2),
+    abilityData: [
+      {
+        id: `${slug}-leader-damage`,
+        label: "Leader Damage",
+        trigger: "ACTIVATED",
+        requiresTarget: false,
+        effects: [{ type: "DAMAGE", target: "ENEMY_LEADER", amount }],
+      },
+    ],
+  };
+}
+
 function necrpTuffLeader(): CardTemplate {
   return {
     ...leader,
@@ -734,6 +749,109 @@ assert.equal(chapterTwoBossState.players[1].leader.template.slug, "woke-mind-vir
 assert.equal(cardCatalog.find((card) => card.slug === "woke-mind-virus-deployable")?.dropEnabled, false, "chapter 2 final reward should not drop from packs");
 assert.equal(cardCatalog.find((card) => card.slug === "tom-macdonald-blacked-chapter-2-leader")?.dropEnabled, false, "Tom story leader should not drop from packs");
 assert.equal(cardCatalog.find((card) => card.slug === "tom-macdonald-blacked-chapter-2-reward")?.dropEnabled, false, "Tom story reward should not drop from packs");
+
+const chapterThreeFirst = storyEncounters.find((encounter) => encounter.slug === "chapter-3-woke-charlie-kirk")!;
+const chapterThreeFinal = storyEncounters.find((encounter) => encounter.slug === "chapter-3-anarchy-gluttonous")!;
+assert.equal(chapterThreeFirst.chapter, 3, "chapter 3 first fight should be marked as chapter 3");
+assert.equal(chapterThreeFirst.requiredPreviousSlug, "chapter-2-woke-mind-virus", "chapter 3 should unlock after chapter 2 final boss");
+assert.equal(chapterThreeFinal.rewardSlug, "anarchy-gluttonous-chapter-3-reward", "chapter 3 final boss should grant the gluttonous Anarchy reward");
+const chapterThreeFinalDeck = buildStoryEnemyDeck(cardCatalog, chapterThreeFinal);
+const chapterThreeFinalState = createMatchState(
+  "story-chapter-3-boss",
+  { id: "story-player", name: "Player", deck: deck("story-chapter-3-player") },
+  { id: "story-bot", name: chapterThreeFinal.name, deck: chapterThreeFinalDeck },
+  { seed: "story-chapter-3-boss-seed", deterministic: true },
+);
+assert.equal(chapterThreeFinalState.players[1].leader.template.slug, "anarchy-gluttonous-chapter-3-leader", "chapter 3 final boss should use gluttonous Anarchy");
+for (const slug of [
+  "woke-charlie-kirk-chapter-3-leader",
+  "king-von-chapter-3-leader",
+  "shrekel-not-in-poland-chapter-3-leader",
+  "kanye-west-chapter-3-leader",
+  "suicide-bomber-chapter-3-leader",
+  "anarchy-gluttonous-chapter-3-leader",
+  "anarchy-gluttonous-chapter-3-reward",
+  "necrps-very-drunken-dad",
+]) {
+  assert.equal(cardCatalog.find((card) => card.slug === slug)?.dropEnabled, false, `${slug} should not drop from packs`);
+}
+
+let consumeState = createMatchState(
+  "consume",
+  { id: "a", name: "A", deck: [cardCatalog.find((card) => card.slug === "anarchy-gluttonous-chapter-3-leader")!, ...Array.from({ length: 10 }, (_, index) => unit(`a-consume-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, building("consume-building", 0, 7), ...Array.from({ length: 10 }, (_, index) => unit(`b-consume-extra-${index}`))] },
+  { seed: "consume-seed", deterministic: true },
+);
+const consumeTarget = putCardOnBoard(consumeState, 1, "consume-building");
+const consumeHealthBefore = consumeState.players[0].leader.currentHealth;
+consumeState = applyAction(consumeState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: consumeState.players[0].leader.instanceId,
+  abilityId: "anarchy-gluttonous-devour",
+  targetInstanceId: consumeTarget.instanceId,
+});
+assert.equal(consumeState.players[1].graveyard.some((card) => card.template.slug === "consume-building"), true, "CONSUME should destroy the selected enemy board card");
+assert.equal(consumeState.players[0].leader.currentHealth, consumeHealthBefore + 7, "CONSUME should add the target max HP to source current HP");
+assert.equal(consumeState.players[0].leader.currentMaxHealth, cardCatalog.find((card) => card.slug === "anarchy-gluttonous-chapter-3-leader")!.health * 5 + 7, "CONSUME should add the target max HP to source max HP");
+
+let transformState = createMatchState(
+  "kanye-transform",
+  { id: "a", name: "A", deck: [cardCatalog.find((card) => card.slug === "kanye-west-chapter-3-leader")!, ...Array.from({ length: 10 }, (_, index) => unit(`a-transform-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-transform") },
+  { seed: "kanye-transform-seed", deterministic: true },
+);
+transformState = applyAction(transformState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: transformState.players[0].leader.instanceId,
+  abilityId: "kanye-west-become-ye",
+});
+assert.equal(transformState.players[0].leader.currentAttack, 20, "TEMP_TRANSFORM should apply the temporary attack buff immediately");
+assert.equal(transformState.players[0].leader.currentMaxHealth, 240, "TEMP_TRANSFORM should apply the temporary health buff immediately");
+assert.equal(transformState.players[0].leader.currentAura, 15, "TEMP_TRANSFORM should apply the temporary aura buff immediately");
+transformState = applyAction(transformState, { type: "END_TURN", playerId: "a" });
+transformState = applyAction(transformState, { type: "END_TURN", playerId: "b" });
+assert.equal(transformState.players[0].leader.currentAttack, 9, "TEMP_TRANSFORM should expire and apply the weaker-afterward attack penalty");
+assert.equal(transformState.players[0].leader.currentMaxHealth, 217, "TEMP_TRANSFORM should expire and apply the weaker-afterward health penalty");
+assert.equal(transformState.players[0].leader.currentAura, 11, "TEMP_TRANSFORM should expire and apply the weaker-afterward aura penalty");
+
+let bomberSafeState = createMatchState(
+  "bomber-safe",
+  { id: "a", name: "A", deck: [leader, leaderDamageUnit("safe-damager", 230), ...Array.from({ length: 10 }, (_, index) => unit(`a-safe-extra-${index}`))] },
+  { id: "b", name: "B", deck: [cardCatalog.find((card) => card.slug === "suicide-bomber-chapter-3-leader")!, unit("safe-board", 1, 3), ...Array.from({ length: 10 }, (_, index) => unit(`b-safe-extra-${index}`))] },
+  { seed: "bomber-safe-seed", deterministic: true },
+);
+const safeDamager = putCardOnBoard(bomberSafeState, 0, "safe-damager");
+putCardOnBoard(bomberSafeState, 1, "safe-board");
+bomberSafeState = applyAction(bomberSafeState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: safeDamager.instanceId,
+  abilityId: "safe-damager-leader-damage",
+});
+assert.equal(bomberSafeState.phase, "MAIN", "bomber should not detonate at exactly 20 HP");
+assert.equal(bomberSafeState.players[1].board.some((card) => card.template.slug === "safe-board"), true, "bomber should not wipe the board above the threshold");
+
+let bomberDoomState = createMatchState(
+  "bomber-doom",
+  { id: "a", name: "A", deck: [leader, leaderDamageUnit("doom-damager", 231), unit("enemy-board", 1, 3), ...Array.from({ length: 10 }, (_, index) => unit(`a-doom-extra-${index}`))] },
+  { id: "b", name: "B", deck: [cardCatalog.find((card) => card.slug === "suicide-bomber-chapter-3-leader")!, unit("bomber-board", 1, 3), ...Array.from({ length: 10 }, (_, index) => unit(`b-doom-extra-${index}`))] },
+  { seed: "bomber-doom-seed", deterministic: true },
+);
+const doomDamager = putCardOnBoard(bomberDoomState, 0, "doom-damager");
+putCardOnBoard(bomberDoomState, 0, "enemy-board");
+putCardOnBoard(bomberDoomState, 1, "bomber-board");
+bomberDoomState = applyAction(bomberDoomState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: doomDamager.instanceId,
+  abilityId: "doom-damager-leader-damage",
+});
+assert.equal(bomberDoomState.phase, "FINISHED", "bomber detonation should be able to end the match by destroying the enemy leader");
+assert.equal(bomberDoomState.winnerId, "b", "bomber should survive its own detonation and win if the enemy leader dies");
+assert.equal(bomberDoomState.players[1].leader.currentHealth, 19, "bomber source should not destroy itself");
+assert.equal(bomberDoomState.players[1].oncePerGameUsed.includes("suicide-bomber-critical-detonation"), true, "bomber detonation should be once per game");
 
 let coinHeadsState = createMatchState(
   "coin-heads",

@@ -1,4 +1,4 @@
-import { dealDamage, drawCards, findCard, getAbilityConditionError, getAbilityCooldownRemaining, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
+import { applyStatDelta, dealDamage, drawCards, findCard, getAbilityConditionError, getAbilityCooldownRemaining, getAbilityTargetError, getMaxHealth, getOpponent, getPlayer, MAX_HAND_SIZE, resolveTriggeredAbilities, sweepDeadCards } from "@/lib/game/abilities/engine";
 import type { CardTemplate } from "@/types/cards";
 import type { BattleVisualEvent, CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
 
@@ -218,13 +218,13 @@ export function applyAction(state: MatchState, action: MatchAction): MatchState 
     opponent.board.forEach((card) => {
       card.exhausted = false;
       card.activatedThisTurn = [];
-      clearExpiredStatuses(card, nextState.turn);
+      messages.push(...clearExpiredStatuses(card, nextState.turn, opponent.turnsStarted));
       if (card.poisoned) {
         messages.push(...dealDamage(card, 1, "Poison"));
       }
     });
     opponent.leader.activatedThisTurn = [];
-    clearExpiredStatuses(opponent.leader, nextState.turn);
+    messages.push(...clearExpiredStatuses(opponent.leader, nextState.turn, opponent.turnsStarted));
     if (opponent.leader.poisoned) {
       messages.push(...dealDamage(opponent.leader, 1, "Poison"));
     }
@@ -601,15 +601,25 @@ function instantiateCard(template: CardTemplate, ownerId: string, zone: CardInst
     activatedThisTurn: [],
     abilityCooldowns: {},
     attachedItems: [],
+    temporaryEffects: [],
     enteredTurn: 0,
   };
 }
 
-function clearExpiredStatuses(card: CardInstance, turn: number) {
+function clearExpiredStatuses(card: CardInstance, turn: number, ownerTurnsStarted: number) {
+  const messages: string[] = [];
   if ((card.stunnedUntilTurn ?? 0) < turn) card.stunnedUntilTurn = undefined;
   if ((card.blindedUntilTurn ?? 0) < turn) card.blindedUntilTurn = undefined;
   if ((card.burnedUntilTurn ?? 0) < turn) card.burnedUntilTurn = undefined;
+  const expired = card.temporaryEffects?.filter((effect) => effect.expiresOnOwnerTurn <= ownerTurnsStarted) ?? [];
+  card.temporaryEffects = card.temporaryEffects?.filter((effect) => effect.expiresOnOwnerTurn > ownerTurnsStarted) ?? [];
+  for (const effect of expired) {
+    applyStatDelta(card, -effect.attack, -effect.health, -effect.size, -effect.aura);
+    applyStatDelta(card, effect.afterAttack, effect.afterHealth, effect.afterSize, effect.afterAura);
+    messages.push(`${card.template.name}'s temporary form faded.`);
+  }
   card.currentHealth = Math.min(card.currentHealth, getMaxHealth(card));
+  return messages;
 }
 
 function shuffle<T>(items: T[], options: { deterministic?: boolean; seed?: string }, salt: string) {
