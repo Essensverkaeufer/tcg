@@ -1119,4 +1119,216 @@ assert.equal(validateAction(flexState, {
   targetInstanceId: flexState.players[0].leader.instanceId,
 }).ok, true, "Flex blind should expire after the target owner's next turn");
 
+function catalogCard(slug: string) {
+  const card = cardCatalog.find((entry) => entry.slug === slug);
+  if (!card) throw new Error(`Missing catalog card ${slug}`);
+  return card;
+}
+
+let groupChatState = createMatchState(
+  "group-chat-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("the-group-chat"), unit("friendly-chat-target", 2, 6), building("friendly-chat-building", 0, 8), ...Array.from({ length: 10 }, (_, index) => unit(`a-chat-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("enemy-chat-target", 2, 6), ...Array.from({ length: 10 }, (_, index) => unit(`b-chat-extra-${index}`))] },
+  { seed: "group-chat-support-seed", deterministic: true },
+);
+const groupChat = putCardOnBoard(groupChatState, 0, "the-group-chat");
+putCardOnBoard(groupChatState, 0, "friendly-chat-target");
+putCardOnBoard(groupChatState, 0, "friendly-chat-building");
+putCardOnBoard(groupChatState, 1, "enemy-chat-target");
+const groupLeaderAttack = groupChatState.players[0].leader.currentAttack;
+groupChatState = applyAction(groupChatState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: groupChat.instanceId,
+  abilityId: "the-group-chat-hype-cycle",
+});
+assert.equal(groupChatState.players[0].board.find((card) => card.template.slug === "friendly-chat-target")?.currentAttack, 3, "Group Chat should buff friendly board characters");
+assert.equal(groupChatState.players[0].board.find((card) => card.template.slug === "friendly-chat-building")?.currentAttack, 0, "FRIENDLY_BOARD_CHARACTERS should not buff friendly buildings");
+assert.equal(groupChatState.players[1].board[0].currentAttack, 2, "FRIENDLY_BOARD_CHARACTERS should not buff enemies");
+assert.equal(groupChatState.players[0].leader.currentAttack, groupLeaderAttack, "FRIENDLY_BOARD_CHARACTERS should not buff the leader");
+
+let speedrunState = createMatchState(
+  "speedrun-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("hunie-pop-speedrunning"), unit("speedrun-target", 2, 10), ...Array.from({ length: 10 }, (_, index) => unit(`a-speedrun-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-speedrun") },
+  { seed: "speedrun-support-seed", deterministic: true },
+);
+const speedrun = putCardOnBoard(speedrunState, 0, "hunie-pop-speedrunning");
+const speedrunTarget = putCardOnBoard(speedrunState, 0, "speedrun-target");
+speedrunTarget.currentHealth = 3;
+speedrunState = applyAction(speedrunState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: speedrun.instanceId,
+  abilityId: "hunie-pop-speedrunning-reset-route",
+  targetInstanceId: speedrunTarget.instanceId,
+});
+assert.equal(speedrunState.players[0].board.find((card) => card.template.slug === "speedrun-target")?.currentHealth, 7, "Hunie Pop Speedrunning should heal a friendly character");
+
+let potheadsState = createMatchState(
+  "potheads-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("huniepotheads"), unit("potheads-target", 2, 6), ...Array.from({ length: 10 }, (_, index) => unit(`a-potheads-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-potheads") },
+  { seed: "potheads-support-seed", deterministic: true },
+);
+const potheads = putCardOnBoard(potheadsState, 0, "huniepotheads");
+const potheadsTarget = putCardOnBoard(potheadsState, 0, "potheads-target");
+potheadsState = applyAction(potheadsState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: potheads.instanceId,
+  abilityId: "huniepotheads-smoke-screen",
+  targetInstanceId: potheadsTarget.instanceId,
+});
+assert.equal(potheadsState.players[0].board.find((card) => card.template.slug === "potheads-target")?.shielded, true, "HuniePotHeads should shield a friendly character");
+
+let polandState = createMatchState(
+  "poland-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("poland"), unit("poland-target-a", 2, 6), unit("poland-target-b", 1, 5), building("poland-building", 0, 9), ...Array.from({ length: 10 }, (_, index) => unit(`a-poland-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-poland") },
+  { seed: "poland-support-seed", deterministic: true },
+);
+const poland = putCardOnBoard(polandState, 0, "poland");
+putCardOnBoard(polandState, 0, "poland-target-a");
+putCardOnBoard(polandState, 0, "poland-target-b");
+putCardOnBoard(polandState, 0, "poland-building");
+polandState = applyAction(polandState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: poland.instanceId,
+  abilityId: "poland-fortify-line",
+});
+assert.equal(polandState.players[0].board.find((card) => card.template.slug === "poland-target-a")?.currentMaxHealth, 8, "Poland should increase friendly character max health");
+assert.equal(polandState.players[0].board.find((card) => card.template.slug === "poland-target-b")?.currentMaxHealth, 7, "Poland should buff every friendly character");
+assert.equal(polandState.players[0].board.find((card) => card.template.slug === "poland-building")?.currentMaxHealth, 9, "Poland should not buff buildings");
+
+let floridaState = createMatchState(
+  "florida-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("florida"), unit("florida-target", 2, 6), ...Array.from({ length: 10 }, (_, index) => unit(`a-florida-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-florida") },
+  { seed: "florida-support-seed", deterministic: true },
+);
+const florida = putCardOnBoard(floridaState, 0, "florida");
+const floridaTarget = putCardOnBoard(floridaState, 0, "florida-target");
+floridaState = applyAction(floridaState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: florida.instanceId,
+  abilityId: "florida-chaos-boost",
+  targetInstanceId: floridaTarget.instanceId,
+});
+assert.equal(floridaState.players[0].board.find((card) => card.template.slug === "florida-target")?.currentAttack, 4, "Florida should buff target attack");
+assert.equal(floridaState.players[0].board.find((card) => card.template.slug === "florida-target")?.currentAura, 1, "Florida should buff target aura");
+
+let texasState = createMatchState(
+  "texas-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("texas"), unit("texas-target", 2, 6), ...Array.from({ length: 10 }, (_, index) => unit(`a-texas-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-texas") },
+  { seed: "texas-support-seed", deterministic: true },
+);
+const texas = putCardOnBoard(texasState, 0, "texas");
+const texasTarget = putCardOnBoard(texasState, 0, "texas-target");
+texasState = applyAction(texasState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: texas.instanceId,
+  abilityId: "texas-stand-your-ground",
+  targetInstanceId: texasTarget.instanceId,
+});
+assert.equal(texasState.players[0].board.find((card) => card.template.slug === "texas-target")?.shielded, true, "Texas should shield a friendly character");
+assert.equal(texasState.players[0].board.find((card) => card.template.slug === "texas-target")?.currentAttack, 3, "Texas should buff target attack");
+
+let basementDoorState = createMatchState(
+  "basement-door-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("jpjs-basement"), ...Array.from({ length: 10 }, (_, index) => unit(`a-basement-door-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-basement-door") },
+  { seed: "basement-door-support-seed", deterministic: true },
+);
+const basementDoor = putCardOnBoard(basementDoorState, 0, "jpjs-basement");
+basementDoorState.players[0].leader.currentHealth -= 8;
+basementDoorState = applyAction(basementDoorState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: basementDoor.instanceId,
+  abilityId: "jpjs-basement-lock-the-door",
+});
+assert.equal(basementDoorState.players[0].leader.shielded, true, "JPJ's Basement should shield the friendly leader");
+assert.equal(basementDoorState.players[0].leader.currentHealth, basementDoorState.players[0].leader.currentMaxHealth - 5, "JPJ's Basement should heal the friendly leader");
+
+let pillowState = createMatchState(
+  "pillow-support",
+  { id: "a", name: "A", deck: [leader, catalogCard("pillow-necrp"), unit("pillow-target-a", 2, 12), unit("pillow-target-b", 1, 10), ...Array.from({ length: 10 }, (_, index) => unit(`a-pillow-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-pillow") },
+  { seed: "pillow-support-seed", deterministic: true },
+);
+const pillow = putCardOnBoard(pillowState, 0, "pillow-necrp");
+const pillowTargetA = putCardOnBoard(pillowState, 0, "pillow-target-a");
+const pillowTargetB = putCardOnBoard(pillowState, 0, "pillow-target-b");
+pillowTargetA.currentHealth = 2;
+pillowTargetB.currentHealth = 4;
+pillowState = applyAction(pillowState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: pillow.instanceId,
+  abilityId: "pillow-necrp-nap-circle",
+});
+assert.equal(pillowState.players[0].board.find((card) => card.template.slug === "pillow-target-a")?.currentHealth, 10, "Pillow Necrp should heal first friendly character");
+assert.equal(pillowState.players[0].board.find((card) => card.template.slug === "pillow-target-b")?.currentHealth, 10, "Pillow Necrp should heal second friendly character up to max");
+
+let andrewState = createMatchState(
+  "andrew-tate-feature",
+  { id: "a", name: "A", deck: [catalogCard("andrew-tate"), ...Array.from({ length: 10 }, (_, index) => unit(`a-andrew-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("andrew-target", 2, 10), ...Array.from({ length: 10 }, (_, index) => unit(`b-andrew-extra-${index}`))] },
+  { seed: "andrew-tate-feature-seed", deterministic: true },
+);
+const andrewTarget = putCardOnBoard(andrewState, 1, "andrew-target");
+andrewState = applyAction(andrewState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: andrewState.players[0].leader.instanceId,
+  abilityId: "andrew-tate-matrix-pressure",
+  targetInstanceId: andrewTarget.instanceId,
+});
+assert.equal(andrewState.players[1].board[0].currentHealth, 4, "Andrew Tate should damage the selected enemy character");
+assert.equal((andrewState.players[1].board[0].blindedUntilTurn ?? 0) > andrewState.turn, true, "Andrew Tate should blind the target");
+assert.equal(andrewState.players[0].leader.currentAttack, 12, "Andrew Tate should buff self attack");
+assert.equal(andrewState.players[0].leader.currentAura, 13, "Andrew Tate should buff self aura");
+
+let tristanState = createMatchState(
+  "tristan-tate-feature",
+  { id: "a", name: "A", deck: [leader, catalogCard("tristan-tate"), ...Array.from({ length: 10 }, (_, index) => unit(`a-tristan-extra-${index}`))] },
+  { id: "b", name: "B", deck: deck("b-tristan") },
+  { seed: "tristan-tate-feature-seed", deterministic: true },
+);
+const tristan = putCardOnBoard(tristanState, 0, "tristan-tate");
+tristanState.players[0].leader.currentHealth -= 12;
+tristanState = applyAction(tristanState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: tristan.instanceId,
+  abilityId: "tristan-tate-brother-buffer",
+});
+assert.equal(tristanState.players[0].leader.currentHealth, tristanState.players[0].leader.currentMaxHealth - 4, "Tristan Tate should heal the friendly leader");
+assert.equal(tristanState.players[0].leader.shielded, true, "Tristan Tate should shield the friendly leader");
+assert.equal(tristanState.players[0].leader.currentAura, 1, "Tristan Tate should buff leader aura");
+
+let zedState = createMatchState(
+  "zed-feature",
+  { id: "a", name: "A", deck: [leader, catalogCard("zed"), ...Array.from({ length: 10 }, (_, index) => unit(`a-zed-extra-${index}`))] },
+  { id: "b", name: "B", deck: [leader, unit("zed-target", 2, 10), ...Array.from({ length: 10 }, (_, index) => unit(`b-zed-extra-${index}`))] },
+  { seed: "zed-feature-seed", deterministic: true },
+);
+const zed = putCardOnBoard(zedState, 0, "zed");
+const zedTarget = putCardOnBoard(zedState, 1, "zed-target");
+zedState = applyAction(zedState, {
+  type: "USE_ABILITY",
+  playerId: "a",
+  sourceInstanceId: zed.instanceId,
+  abilityId: "zed-shadow-mark",
+  targetInstanceId: zedTarget.instanceId,
+});
+assert.equal(zedState.players[1].board[0].currentHealth, 3, "Zed should damage the selected enemy character");
+assert.equal((zedState.players[1].board[0].blindedUntilTurn ?? 0) > zedState.turn, true, "Zed should blind the target");
+assert.equal(zedState.players[0].board[0].currentAttack, 9, "Zed should buff self attack");
+
 console.log("battle engine tests passed");

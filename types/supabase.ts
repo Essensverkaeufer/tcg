@@ -513,6 +513,7 @@ export type Database = {
           p_featured_slug: string;
           p_price_per_pull?: number;
           p_hard_pity?: number;
+          p_featured_slugs?: string[];
         };
         Returns: Array<{
           coins: number;

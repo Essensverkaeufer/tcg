@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { defaultGachaBanner, getFeaturedChanceForNextPull, getGachaBanner, getGuaranteedIn, type GachaBanner } from "@/lib/game/gacha";
-import { ensureFeaturedGachaCard } from "@/lib/game/gacha-server";
+import { ensureFeaturedGachaCards } from "@/lib/game/gacha-server";
 import { cardRowToTemplate } from "@/lib/game/mapping";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 import type { Database } from "@/types/supabase";
@@ -12,8 +12,8 @@ type CardRow = Database["public"]["Tables"]["card_templates"]["Row"];
 function buildStatus({
   banner,
   coins,
-  featuredCard,
-  featuredOwned,
+  featuredCards,
+  featuredOwnedBySlug,
   featuredCopies,
   pullsSinceFeatured,
   totalPulls,
@@ -21,8 +21,8 @@ function buildStatus({
 }: {
   banner: GachaBanner;
   coins: number;
-  featuredCard: CardRow;
-  featuredOwned: number;
+  featuredCards: CardRow[];
+  featuredOwnedBySlug: Record<string, number>;
   featuredCopies: number;
   pullsSinceFeatured: number;
   totalPulls: number;
@@ -34,12 +34,14 @@ function buildStatus({
       nextFeaturedChance: getFeaturedChanceForNextPull(pullsSinceFeatured, banner),
     },
     coins,
-    featuredCard: cardRowToTemplate(featuredCard),
+    featuredCard: cardRowToTemplate(featuredCards[0]),
+    featuredCards: featuredCards.map(cardRowToTemplate),
     pity: {
       pullsSinceFeatured,
       totalPulls,
       featuredCopies,
-      featuredOwned,
+      featuredOwned: Object.values(featuredOwnedBySlug).reduce((total, quantity) => total + quantity, 0),
+      featuredOwnedBySlug,
       guaranteedIn: getGuaranteedIn(pullsSinceFeatured, banner),
     },
     history: history.map((entry) => ({
@@ -66,7 +68,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const featuredCard = await ensureFeaturedGachaCard(auth.supabase, banner);
+    const featuredCards = await ensureFeaturedGachaCards(auth.supabase, banner);
+    const featuredIds = featuredCards.map((card) => card.id);
+    if (!featuredCards.length) throw new Error("Featured gacha card is missing.");
 
     const [profileResult, pityResult, collectionResult, historyResult] = await Promise.all([
       auth.supabase.from("profiles").select("coins").eq("id", auth.user.id).single(),
@@ -78,10 +82,9 @@ export async function GET(request: Request) {
         .maybeSingle(),
       auth.supabase
         .from("user_card_collection")
-        .select("quantity")
+        .select("card_template_id, quantity")
         .eq("user_id", auth.user.id)
-        .eq("card_template_id", featuredCard.id)
-        .maybeSingle(),
+        .in("card_template_id", featuredIds),
       auth.supabase
         .from("gacha_pull_history")
         .select("*")
@@ -99,8 +102,11 @@ export async function GET(request: Request) {
     return NextResponse.json(buildStatus({
       banner,
       coins: profileResult.data.coins,
-      featuredCard,
-      featuredOwned: collectionResult.data?.quantity ?? 0,
+      featuredCards,
+      featuredOwnedBySlug: Object.fromEntries(featuredCards.map((card) => [
+        card.slug,
+        collectionResult.data?.find((entry) => entry.card_template_id === card.id)?.quantity ?? 0,
+      ])),
       featuredCopies: pityResult.data?.featured_copies ?? 0,
       pullsSinceFeatured: pityResult.data?.pulls_since_featured ?? 0,
       totalPulls: pityResult.data?.total_pulls ?? 0,

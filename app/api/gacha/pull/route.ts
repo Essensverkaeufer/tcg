@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { defaultGachaBanner, getGachaBanner } from "@/lib/game/gacha";
-import { ensureFeaturedGachaCard } from "@/lib/game/gacha-server";
+import { ensureFeaturedGachaCards } from "@/lib/game/gacha-server";
 import { cardRowToTemplate } from "@/lib/game/mapping";
 import { requireSupabaseUser } from "@/lib/supabase/auth";
 import type { Database } from "@/types/supabase";
@@ -58,13 +58,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    await ensureFeaturedGachaCard(auth.supabase, banner);
+    await ensureFeaturedGachaCards(auth.supabase, banner);
 
     const pullResult = await auth.supabase.rpc("grant_gacha_pulls", {
       p_user_id: auth.user.id,
       p_banner_slug: banner.slug,
       p_pull_count: parsed.data.pullCount,
-      p_featured_slug: banner.featuredSlug,
+      p_featured_slug: banner.featuredSlugs[0],
+      p_featured_slugs: [...banner.featuredSlugs],
       p_price_per_pull: banner.pricePerPull,
       p_hard_pity: banner.hardPity,
     });

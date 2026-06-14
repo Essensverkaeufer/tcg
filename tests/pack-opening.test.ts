@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { openPack } from "@/lib/game/packs/openPack";
+import { gachaBanners, getFeaturedChanceForNextPull, getGachaBanner, getGuaranteedIn } from "@/lib/game/gacha";
 import type { CardTemplate } from "@/types/cards";
 
 const commonLeader: CardTemplate = {
@@ -66,5 +67,13 @@ assert.equal(
   true,
   "drop-disabled story cards should not appear in packs",
 );
+
+const tateBanner = getGachaBanner("tate-brothers-constellation");
+assert.ok(tateBanner, "Tate Brothers gacha banner should exist");
+assert.deepEqual(tateBanner.featuredSlugs, ["andrew-tate", "tristan-tate"], "Tate banner should have two featured cards");
+assert.equal(getGuaranteedIn(99, tateBanner), 1, "dual-feature banner should use normal hard pity math");
+assert.equal(getFeaturedChanceForNextPull(99, tateBanner), 1, "dual-feature banner should guarantee a featured card at hard pity");
+assert.equal(gachaBanners.every((banner) => banner.featuredSlugs.length >= 1), true, "every gacha banner should declare at least one featured card");
+assert.equal(gachaBanners.filter((banner) => banner.featuredSlugs.length === 1).length >= 3, true, "existing single-feature banners should stay represented");
 
 console.log("pack opening tests passed");

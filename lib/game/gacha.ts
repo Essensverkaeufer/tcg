@@ -4,8 +4,8 @@ export type GachaBanner = {
   slug: string;
   name: string;
   subtitle: string;
-  featuredSlug: string;
-  featuredLabel: string;
+  featuredSlugs: readonly string[];
+  featuredLabels: readonly string[];
   pricePerPull: 100;
   hardPity: 100;
   allowedPullCounts: readonly [1, 10];
@@ -15,8 +15,8 @@ export const necrpTuffGachaBanner: GachaBanner = {
   slug: "necrp-tuff-constellation",
   name: "necrp Tuff Constellation",
   subtitle: "The original DIVINE constellation chase.",
-  featuredSlug: "necrp-tuff-edition",
-  featuredLabel: "necrp (tuff edition)",
+  featuredSlugs: ["necrp-tuff-edition"],
+  featuredLabels: ["necrp (tuff edition)"],
   pricePerPull: 100,
   hardPity: 100,
   allowedPullCounts: [1, 10] as const,
@@ -26,8 +26,8 @@ export const pillowNecrpGachaBanner: GachaBanner = {
   slug: "pillow-necrp-constellation",
   name: "Pillow Necrp Constellation",
   subtitle: "A cozy DIVINE building banner with the same brutal pity.",
-  featuredSlug: "pillow-necrp",
-  featuredLabel: "pillow necrp",
+  featuredSlugs: ["pillow-necrp"],
+  featuredLabels: ["pillow necrp"],
   pricePerPull: 100,
   hardPity: 100,
   allowedPullCounts: [1, 10] as const,
@@ -37,14 +37,25 @@ export const evilRowletGachaBanner: GachaBanner = {
   slug: "evil-rowletforsenator-constellation",
   name: "Evil RowletForSenator Constellation",
   subtitle: "A corrupted DIVINE Rowlet banner for control-heavy American decks.",
-  featuredSlug: "rowletforsenator-evil",
-  featuredLabel: "RowletForSenator (Evil)",
+  featuredSlugs: ["rowletforsenator-evil"],
+  featuredLabels: ["RowletForSenator (Evil)"],
   pricePerPull: 100,
   hardPity: 100,
   allowedPullCounts: [1, 10] as const,
 };
 
-export const gachaBanners = [necrpTuffGachaBanner, pillowNecrpGachaBanner, evilRowletGachaBanner] as const;
+export const tateBrothersGachaBanner: GachaBanner = {
+  slug: "tate-brothers-constellation",
+  name: "Tate Brothers Constellation",
+  subtitle: "A dual-feature DIVINE banner built around ego pressure and brother support.",
+  featuredSlugs: ["andrew-tate", "tristan-tate"],
+  featuredLabels: ["Andrew Tate", "Tristan Tate"],
+  pricePerPull: 100,
+  hardPity: 100,
+  allowedPullCounts: [1, 10] as const,
+};
+
+export const gachaBanners = [necrpTuffGachaBanner, pillowNecrpGachaBanner, evilRowletGachaBanner, tateBrothersGachaBanner] as const;
 
 export const defaultGachaBanner = necrpTuffGachaBanner;
 
@@ -61,6 +72,14 @@ export const gachaRarityRates: Array<{ rarity: Exclude<Rarity, "DIVINE">; rate: 
 
 export function getGachaBanner(slug: string | null | undefined) {
   return gachaBanners.find((banner) => banner.slug === slug) ?? null;
+}
+
+export function getPrimaryFeaturedSlug(banner: GachaBanner) {
+  return banner.featuredSlugs[0] ?? "";
+}
+
+export function getFeaturedLabel(banner: GachaBanner) {
+  return banner.featuredLabels.join(" / ");
 }
 
 export function getFeaturedChanceForNextPull(pullsSinceFeatured: number, banner: GachaBanner = defaultGachaBanner) {

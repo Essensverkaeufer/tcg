@@ -14,11 +14,13 @@ type BannerStatus = {
   banner: GachaBanner & { nextFeaturedChance: number };
   coins: number;
   featuredCard: CardTemplate;
+  featuredCards: CardTemplate[];
   pity: {
     pullsSinceFeatured: number;
     totalPulls: number;
     featuredCopies: number;
     featuredOwned: number;
+    featuredOwnedBySlug?: Record<string, number>;
     guaranteedIn: number;
   };
 };
@@ -98,11 +100,11 @@ export function GachaMenuClient() {
                 return (
                   <article key={banner.slug} className={clsx(
                     "gacha-banner-shimmer stagger-card grid gap-5 rounded-lg border bg-black/40 p-4 shadow-2xl backdrop-blur md:grid-cols-[260px_minmax(0,1fr)]",
-                    banner.featuredSlug === "pillow-necrp" ? "border-cyan-200/35 shadow-cyan-500/10" : "border-violet-200/30 shadow-violet-500/10",
+                    banner.featuredSlugs.includes("pillow-necrp") ? "border-cyan-200/35 shadow-cyan-500/10" : "border-violet-200/30 shadow-violet-500/10",
                   )}>
-                    <div>
-                      {ready?.featuredCard ? (
-                        <CardFrame card={ready.featuredCard} />
+                    <div className={clsx("grid gap-3", (ready?.featuredCards?.length ?? banner.featuredSlugs.length) > 1 && "sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2")}>
+                      {ready?.featuredCards?.length ? (
+                        ready.featuredCards.map((card) => <CardFrame key={card.slug} card={card} />)
                       ) : (
                         <div className="grid aspect-[2/3] place-items-center rounded-lg border border-white/10 bg-slate-950/80 text-sm font-black text-white/50">
                           {state.status === "loading" ? <LoaderCircle className="h-6 w-6 animate-spin" aria-hidden /> : "Unavailable"}
@@ -143,6 +145,15 @@ export function GachaMenuClient() {
                             <div className="mt-1">{pity?.featuredOwned ?? "--"}</div>
                           </div>
                         </div>
+                        {ready?.featuredCards?.length && pity?.featuredOwnedBySlug ? (
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black uppercase text-cyan-100">
+                            {ready.featuredCards.map((card) => (
+                              <span key={card.slug} className="rounded-full border border-cyan-200/30 bg-cyan-200/10 px-2 py-1">
+                                {card.name}: {pity.featuredOwnedBySlug?.[card.slug] ?? 0}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
 
                       <Link

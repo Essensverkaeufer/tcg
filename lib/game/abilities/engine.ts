@@ -402,6 +402,8 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
         && matchesCardSlug(requestedTarget, effect.cardSlug)
         ? [requestedTarget]
         : controller.board.filter((card) => matchesCardSlug(card, effect.cardSlug)).slice(0, effect.amount ?? 1);
+    case "FRIENDLY_BOARD_CHARACTERS":
+      return controller.board.filter((card) => card.template.cardType === "CHARACTER" && matchesCardSlug(card, effect.cardSlug));
     case "ENEMY_CHARACTER":
       return requestedTarget && requestedTarget.ownerId === opponent.playerId && requestedTarget.zone === "BOARD"
         && requestedTarget.template.cardType === "CHARACTER"
@@ -448,7 +450,7 @@ function selectTargets(state: MatchState, effect: AbilityEffect, event: AbilityE
 }
 
 function isEffectTargeted(effect: AbilityEffect) {
-  return !["SELF", "FRIENDLY_BOARD_AND_LEADER", "ALL_IN_PLAY_EXCEPT_SELF", "RANDOM_ENEMY", "RANDOM_ENEMY_CHARACTER", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
+  return !["SELF", "FRIENDLY_BOARD_AND_LEADER", "FRIENDLY_BOARD_CHARACTERS", "ALL_IN_PLAY_EXCEPT_SELF", "RANDOM_ENEMY", "RANDOM_ENEMY_CHARACTER", "ENEMY_BOARD_CHARACTERS", "BOARD", "HAND", "DECK", "GRAVEYARD"].includes(effect.target);
 }
 
 function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controllerId: string, target: CardInstance) {
@@ -468,6 +470,7 @@ function isValidEffectTarget(state: MatchState, effect: AbilityEffect, controlle
       return target.instanceId === opponent.leader.instanceId;
     case "FRIENDLY_CHARACTER":
     case "ALLY_CHARACTER":
+    case "FRIENDLY_BOARD_CHARACTERS":
       return target.ownerId === controller.playerId && target.zone === "BOARD" && target.template.cardType === "CHARACTER";
     case "ENEMY_CHARACTER":
     case "ENEMY_BOARD_CHARACTERS":

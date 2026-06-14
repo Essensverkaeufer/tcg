@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CardFrame } from "@/components/cards/CardFrame";
-import { gachaRarityRates, getFeaturedChanceForNextPull, getGachaBanner, getGuaranteedIn, type GachaBanner } from "@/lib/game/gacha";
+import { gachaRarityRates, getFeaturedChanceForNextPull, getFeaturedLabel, getGachaBanner, getGuaranteedIn, type GachaBanner } from "@/lib/game/gacha";
 import { getRarityTheme } from "@/lib/game/rarities";
 import type { CardTemplate } from "@/types/cards";
 
@@ -36,11 +36,13 @@ type GachaStatus = {
   banner: GachaBanner & { nextFeaturedChance: number };
   coins: number;
   featuredCard: CardTemplate;
+  featuredCards: CardTemplate[];
   pity: {
     pullsSinceFeatured: number;
     totalPulls: number;
     featuredCopies: number;
     featuredOwned: number;
+    featuredOwnedBySlug?: Record<string, number>;
     guaranteedIn: number;
   };
   history: GachaHistoryEntry[];
@@ -86,12 +88,17 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
     const latest = visibleRewards[visibleRewards.length - 1];
     if (!latest) return status.pity;
     const featuredHits = visibleRewards.filter((reward) => reward.featured).length;
+    const featuredOwnedBySlug = { ...(status.pity.featuredOwnedBySlug ?? {}) };
+    for (const reward of visibleRewards) {
+      if (reward.featured) featuredOwnedBySlug[reward.slug] = (featuredOwnedBySlug[reward.slug] ?? 0) + 1;
+    }
     return {
       ...status.pity,
       pullsSinceFeatured: latest.pityAfter,
       totalPulls: status.pity.totalPulls + revealed,
       featuredCopies: status.pity.featuredCopies + featuredHits,
       featuredOwned: status.pity.featuredOwned + featuredHits,
+      featuredOwnedBySlug,
       guaranteedIn: activeBanner ? getGuaranteedIn(latest.pityAfter, activeBanner) : status.pity.guaranteedIn,
     };
   }, [activeBanner, pullRewards, pullSettled, pullStartPity, revealed, status]);
@@ -240,7 +247,11 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                   </div>
                   <span className="rounded-full border border-cyan-200/50 bg-cyan-100 px-3 py-1 text-xs font-black text-cyan-950">DIVINE</span>
                 </div>
-                {status?.featuredCard ? <CardFrame card={status.featuredCard} /> : (
+                {status?.featuredCards?.length ? (
+                  <div className={clsx("grid gap-3", status.featuredCards.length > 1 && "sm:grid-cols-2 lg:grid-cols-1")}>
+                    {status.featuredCards.map((card) => <CardFrame key={card.slug} card={card} />)}
+                  </div>
+                ) : (
                   <div className="grid min-h-80 place-items-center rounded-lg border border-white/10 bg-black/30 text-sm font-bold text-white/60">
                     {loading ? "Loading card..." : "Featured card unavailable"}
                   </div>
@@ -254,7 +265,7 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100">Constellation Reward</p>
-                      <h2 className="mt-1 text-3xl font-black">{status?.featuredCard.name ?? activeBanner?.featuredLabel}</h2>
+                      <h2 className="mt-1 text-3xl font-black">{status?.featuredCards?.map((card) => card.name).join(" / ") ?? (activeBanner ? getFeaturedLabel(activeBanner) : "Featured")}</h2>
                       <p className="mt-2 max-w-2xl text-sm font-bold text-slate-300">
                         {activeBanner?.subtitle} Pulls cost {activeBanner?.pricePerPull} coins. Featured pity resets whenever the DIVINE card appears.
                       </p>
@@ -278,6 +289,15 @@ export function GachaClient({ bannerSlug }: { bannerSlug: string }) {
                       <span>Featured copies: {displayPity?.featuredCopies ?? 0}</span>
                       <span>Owned: {displayPity?.featuredOwned ?? 0}</span>
                     </div>
+                    {status?.featuredCards?.length && displayPity?.featuredOwnedBySlug ? (
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black uppercase text-cyan-100">
+                        {status.featuredCards.map((card) => (
+                          <span key={card.slug} className="rounded-full border border-cyan-200/30 bg-cyan-200/10 px-2 py-1">
+                            {card.name}: {displayPity.featuredOwnedBySlug?.[card.slug] ?? 0}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-3">

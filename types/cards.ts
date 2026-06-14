@@ -20,6 +20,7 @@ export type AbilityTrigger =
 export type AbilityTarget =
   | "SELF"
   | "FRIENDLY_CHARACTER"
+  | "FRIENDLY_BOARD_CHARACTERS"
   | "FRIENDLY_LEADER"
   | "ALLY_CHARACTER"
   | "ALLY_LEADER"
