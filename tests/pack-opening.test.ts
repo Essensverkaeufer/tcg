@@ -77,7 +77,13 @@ const godChasePack = packDefinitions.find((pack) => pack.slug === "god-chase-pac
 assert.equal(premiumPack.cardCount, 7, "Premium Pack should have 7 cards");
 assert.equal(ascendantPack.cardCount, 10, "Ascendant Pack should have 10 cards");
 assert.equal(godChasePack.cardCount, 12, "God Chase Pack should have 12 cards");
+assert.equal(premiumPack.priceCoins, 250, "Premium Pack should use the slashed price");
+assert.equal(ascendantPack.priceCoins, 500, "Ascendant Pack should use the slashed price");
+assert.equal(godChasePack.priceCoins, 1000, "God Chase Pack should use the slashed price");
+assert.equal(premiumPack.rarityWeights.DIVINE > 0, true, "Premium Pack should now be able to roll Divine cards");
 assert.equal(godChasePack.rarityWeights.DIVINE > ascendantPack.rarityWeights.DIVINE, true, "God Chase Pack should have the best Divine weight");
+assert.equal(godChasePack.rarityWeights.COMMON < ascendantPack.rarityWeights.COMMON, true, "God Chase Pack should have fewer common rolls than Ascendant Pack");
+assert.equal(ascendantPack.rarityWeights.COMMON < premiumPack.rarityWeights.COMMON, true, "Ascendant Pack should have fewer common rolls than Premium Pack");
 for (const pack of [premiumPack, ascendantPack, godChasePack]) {
   const totalOdds = getPackRarityOdds(pack).reduce((sum, entry) => sum + entry.percent, 0);
   assert.equal(Math.round(totalOdds), 100, `${pack.name} rarity odds should normalize to 100%`);
