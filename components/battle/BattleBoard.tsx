@@ -11,7 +11,7 @@ import { resolveCardImageUrl } from "@/lib/game/card-images";
 import { cardCatalog } from "@/lib/game/cards";
 import { validateDeck } from "@/lib/game/decks/validateDeck";
 import { cardRowToTemplate } from "@/lib/game/mapping";
-import { applyAction, ATTACK_ENERGY_COST, createMatchState, getCardCost, getUsedBoardSize, validateAction } from "@/lib/game/match/state";
+import { applyAction, ATTACK_ENERGY_COST, createMatchState, getCardCost, MAX_BOARD_CARDS, validateAction } from "@/lib/game/match/state";
 import { getRarityTheme } from "@/lib/game/rarities";
 import { resolveSoundEffectUrl } from "@/lib/game/sound-effects";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -26,7 +26,6 @@ type DeckCardRow = {
 };
 
 const minimumBoardSlots = [0, 1, 2, 3, 4];
-const maxBoardSize = 30;
 
 function demoDeck(catalog: CardTemplate[] = cardCatalog, offset = 0) {
   const leaders = catalog.filter((card) => card.cardType === "LEADER");
@@ -382,12 +381,11 @@ function TopStrip({ player, handFaceUp, selectedId, currentTurn, visuals, onChoo
 
 function BoardRow({ player, selectedId, currentTurn, visuals, onChoose }: { player: MatchPlayerState; selectedId: string; currentTurn: number; visuals: ReturnType<typeof useBattleVisuals>; onChoose: (card: CardInstance) => void }) {
   const emptySlots = Math.max(0, minimumBoardSlots.length - player.board.length);
-  const usedSize = getUsedBoardSize(player);
   return (
     <section className="battle-zone rounded-lg border border-white/10 bg-black/25 p-3 shadow-inner">
       <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-widest text-slate-400">
         <span>{player.displayName} Board</span>
-        <span>Size {usedSize}/{maxBoardSize}</span>
+        <span>Slots {player.board.length}/{MAX_BOARD_CARDS}</span>
       </div>
       <div className="grid gap-3 md:grid-cols-5">
         {player.board.map((card) => (
@@ -468,7 +466,7 @@ function ControlPanel({
       <section className="rounded-lg border border-white/10 bg-black/45 p-4 backdrop-blur">
         <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">Player 2</h2>
         <Counter label="Energy" value={playerTwo.energyCurrent} suffix={`/${playerTwo.energyMax}`} icon={<Sparkles className="h-4 w-4" />} />
-        <Counter label="Board Size" value={getUsedBoardSize(playerTwo)} suffix={`/${maxBoardSize}`} icon={<Activity className="h-4 w-4" />} />
+        <Counter label="Board Slots" value={playerTwo.board.length} suffix={`/${MAX_BOARD_CARDS}`} icon={<Activity className="h-4 w-4" />} />
         <Counter label="Deck" value={playerTwo.deck.length} icon={<BookOpen className="h-4 w-4" />} />
         <Counter label="Hand" value={playerTwo.hand.length} icon={<Activity className="h-4 w-4" />} />
         <Counter label="Graveyard" value={playerTwo.graveyard.length} icon={<Skull className="h-4 w-4" />} />
@@ -519,7 +517,7 @@ function ControlPanel({
       <section className="rounded-lg border border-white/10 bg-black/45 p-4 text-sm backdrop-blur">
         <h2 className="font-black uppercase tracking-widest text-slate-400">You</h2>
         <Counter label="Energy" value={playerOne.energyCurrent} suffix={`/${playerOne.energyMax}`} icon={<Sparkles className="h-4 w-4" />} />
-        <Counter label="Board Size" value={getUsedBoardSize(playerOne)} suffix={`/${maxBoardSize}`} icon={<Activity className="h-4 w-4" />} />
+        <Counter label="Board Slots" value={playerOne.board.length} suffix={`/${MAX_BOARD_CARDS}`} icon={<Activity className="h-4 w-4" />} />
         <Counter label="Deck" value={playerOne.deck.length} icon={<BookOpen className="h-4 w-4" />} />
         <Counter label="Hand" value={playerOne.hand.length} icon={<Activity className="h-4 w-4" />} />
         <Counter label="Graveyard" value={playerOne.graveyard.length} icon={<Skull className="h-4 w-4" />} />

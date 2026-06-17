@@ -7,13 +7,22 @@ import { Coins, Gift, Shuffle } from "lucide-react";
 import clsx from "clsx";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { packDefinitions } from "@/lib/game/packs/packs";
+import { getPackRarityOdds, packDefinitions } from "@/lib/game/packs/packs";
 
 const accentStyles: Record<string, string> = {
   rose: "border-rose-200 bg-rose-50 text-rose-700",
   sky: "border-sky-200 bg-sky-50 text-sky-700",
   violet: "border-violet-200 bg-violet-50 text-violet-700",
+  amber: "border-amber-200 bg-amber-50 text-amber-700",
+  emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  fuchsia: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
 };
+
+function formatOdds(percent: number) {
+  if (percent === 0) return "0%";
+  if (percent < 1) return `${percent.toFixed(1)}%`;
+  return `${percent.toFixed(0)}%`;
+}
 
 export function PackShop() {
   const router = useRouter();
@@ -60,9 +69,10 @@ export function PackShop() {
           </span>
         </div>
         {message ? <div className="soft-shake rounded-md border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{message}</div> : null}
-        <div className="animated-grid grid gap-4 md:grid-cols-3">
+        <div className="animated-grid grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {packDefinitions.map((pack) => {
             const canAfford = (profile?.coins ?? 0) >= pack.priceCoins;
+            const odds = getPackRarityOdds(pack);
             return (
               <article key={pack.slug} className="stagger-card pack-shop-card foil-hover rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div className={clsx("pack-icon-burst mb-4 grid aspect-[4/3] place-items-center rounded-md border-2", accentStyles[pack.accent])}>
@@ -81,6 +91,20 @@ export function PackShop() {
                 <div className="mt-4 flex items-center gap-2 rounded-md bg-slate-100 p-3 text-xs font-bold text-slate-600">
                   <Shuffle className="h-4 w-4 shrink-0" aria-hidden />
                   Weighted rolls only. No guaranteed rarity.
+                </div>
+                <div className="mt-3 rounded-md border border-slate-200 bg-slate-950 p-3 text-white">
+                  <div className="mb-2 flex items-center justify-between gap-2 text-xs font-black uppercase tracking-widest text-slate-300">
+                    <span>Rarity Odds</span>
+                    <span>{pack.cardCount} cards</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-xs font-bold sm:grid-cols-3">
+                    {odds.map(({ rarity, percent }) => (
+                      <div key={rarity} className="flex items-center justify-between gap-2 rounded bg-white/10 px-2 py-1 text-slate-100">
+                        <span>{rarity.replaceAll("_", " ")}</span>
+                        <span className="text-amber-200">{formatOdds(percent)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 {canAfford ? (
                   <a

@@ -2,7 +2,7 @@ import { applyStatDelta, dealDamage, drawCards, findCard, getAbilityConditionErr
 import type { CardTemplate } from "@/types/cards";
 import type { BattleVisualEvent, CardInstance, MatchAction, MatchPlayerState, MatchState, ValidationResult } from "@/types/match";
 
-const MAX_BOARD_SIZE = 30;
+export const MAX_BOARD_CARDS = 5;
 const MAX_ENERGY = 10;
 const STARTING_ENERGY = 3;
 const ENERGY_GAIN_PER_TURN = 2;
@@ -10,10 +10,6 @@ export const ATTACK_ENERGY_COST = 1;
 
 export function getCardCost(card: CardTemplate) {
   return Math.max(1, Math.min(MAX_ENERGY, Math.ceil((card.attack + card.health + card.size + card.aura) / 6)));
-}
-
-export function getUsedBoardSize(player: MatchPlayerState) {
-  return player.board.reduce((sum, card) => sum + Math.max(0, card.currentSize), 0);
 }
 
 export function createMatchState(
@@ -95,7 +91,7 @@ export function validateAction(state: MatchState, action: MatchAction): Validati
       if (!target) return { ok: false, reason: "Items can only equip a friendly card or leader." };
       return { ok: true };
     }
-    if (getUsedBoardSize(player) + Math.max(0, card.currentSize) > MAX_BOARD_SIZE) return { ok: false, reason: "Not enough board size space." };
+    if (player.board.length >= MAX_BOARD_CARDS) return { ok: false, reason: "Board is full. You can only have 5 cards in play." };
   }
 
   if (action.type === "ATTACK") {

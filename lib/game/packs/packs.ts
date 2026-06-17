@@ -10,6 +10,8 @@ export type PackDefinition = {
   rarityWeights: Record<Rarity, number>;
 };
 
+export const packRarityOrder: Rarity[] = ["COMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ULTRA_LEGENDARY", "DIVINE"];
+
 export const packDefinitions: PackDefinition[] = [
   {
     slug: "core-pack",
@@ -62,8 +64,67 @@ export const packDefinitions: PackDefinition[] = [
       DIVINE: 0,
     },
   },
+  {
+    slug: "premium-pack",
+    name: "Premium Pack",
+    description: "Expensive high-roller pack with more cards and cleaner high-rarity odds.",
+    priceCoins: 500,
+    cardCount: 7,
+    accent: "amber",
+    rarityWeights: {
+      COMMON: 500,
+      RARE: 320,
+      EPIC: 130,
+      LEGENDARY: 38,
+      MYTHIC: 10,
+      ULTRA_LEGENDARY: 2,
+      DIVINE: 0,
+    },
+  },
+  {
+    slug: "ascendant-pack",
+    name: "Ascendant Pack",
+    description: "Big pull session with stronger odds across every premium rarity.",
+    priceCoins: 1000,
+    cardCount: 10,
+    accent: "emerald",
+    rarityWeights: {
+      COMMON: 400,
+      RARE: 340,
+      EPIC: 180,
+      LEGENDARY: 58,
+      MYTHIC: 17,
+      ULTRA_LEGENDARY: 4,
+      DIVINE: 1,
+    },
+  },
+  {
+    slug: "god-chase-pack",
+    name: "God Chase Pack",
+    description: "Best value high-roller pack. Still weighted rolls only, never guaranteed.",
+    priceCoins: 2000,
+    cardCount: 12,
+    accent: "fuchsia",
+    rarityWeights: {
+      COMMON: 300,
+      RARE: 350,
+      EPIC: 230,
+      LEGENDARY: 85,
+      MYTHIC: 25,
+      ULTRA_LEGENDARY: 8,
+      DIVINE: 2,
+    },
+  },
 ];
 
 export function getPackDefinition(slug: string) {
   return packDefinitions.find((pack) => pack.slug === slug);
+}
+
+export function getPackRarityOdds(pack: PackDefinition) {
+  const total = packRarityOrder.reduce((sum, rarity) => sum + pack.rarityWeights[rarity], 0);
+  return packRarityOrder.map((rarity) => ({
+    rarity,
+    percent: total > 0 ? (pack.rarityWeights[rarity] / total) * 100 : 0,
+  }));
 }

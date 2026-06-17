@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { openPack } from "@/lib/game/packs/openPack";
+import { getPackRarityOdds, packDefinitions } from "@/lib/game/packs/packs";
 import { gachaBanners, getFeaturedChanceForNextPull, getGachaBanner, getGuaranteedIn } from "@/lib/game/gacha";
 import type { CardTemplate } from "@/types/cards";
 
@@ -67,6 +68,20 @@ assert.equal(
   true,
   "drop-disabled story cards should not appear in packs",
 );
+
+const highRollerPacks = ["premium-pack", "ascendant-pack", "god-chase-pack"];
+assert.equal(highRollerPacks.every((slug) => packDefinitions.some((pack) => pack.slug === slug)), true, "all high-roller packs should exist");
+const premiumPack = packDefinitions.find((pack) => pack.slug === "premium-pack")!;
+const ascendantPack = packDefinitions.find((pack) => pack.slug === "ascendant-pack")!;
+const godChasePack = packDefinitions.find((pack) => pack.slug === "god-chase-pack")!;
+assert.equal(premiumPack.cardCount, 7, "Premium Pack should have 7 cards");
+assert.equal(ascendantPack.cardCount, 10, "Ascendant Pack should have 10 cards");
+assert.equal(godChasePack.cardCount, 12, "God Chase Pack should have 12 cards");
+assert.equal(godChasePack.rarityWeights.DIVINE > ascendantPack.rarityWeights.DIVINE, true, "God Chase Pack should have the best Divine weight");
+for (const pack of [premiumPack, ascendantPack, godChasePack]) {
+  const totalOdds = getPackRarityOdds(pack).reduce((sum, entry) => sum + entry.percent, 0);
+  assert.equal(Math.round(totalOdds), 100, `${pack.name} rarity odds should normalize to 100%`);
+}
 
 const tateBanner = getGachaBanner("tate-brothers-constellation");
 assert.ok(tateBanner, "Tate Brothers gacha banner should exist");

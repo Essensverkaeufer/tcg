@@ -414,6 +414,68 @@ assert.equal(cappedPlayer.hand.length, 5, "opening hand should stay at 5");
 assert.equal(drawCards(cappedPlayer, 1), 0, "drawing at 5 cards should draw nothing");
 assert.equal(cappedPlayer.hand.length, 5, "hand should stay capped at 5");
 
+let boardCapState = createMatchState(
+  "board-cap",
+  { id: "a", name: "A", deck: deck("a-board-cap") },
+  { id: "b", name: "B", deck: deck("b-board-cap") },
+  { seed: "board-cap-seed", deterministic: true },
+);
+boardCapState.players[0].energyCurrent = 10;
+for (let index = 0; index < 5; index += 1) {
+  const nextCard = boardCapState.players[0].hand[0];
+  boardCapState = applyAction(boardCapState, {
+    type: "PLAY_CARD",
+    playerId: "a",
+    cardInstanceId: nextCard.instanceId,
+  });
+}
+assert.equal(boardCapState.players[0].board.length, 5, "five non-leader cards should fit on the board");
+const sixthBoardCard = putCardInHand(boardCapState, 0, boardCapState.players[0].deck[0].template.slug);
+assert.deepEqual(validateAction(boardCapState, {
+  type: "PLAY_CARD",
+  playerId: "a",
+  cardInstanceId: sixthBoardCard.instanceId,
+}), { ok: false, reason: "Board is full. You can only have 5 cards in play." }, "sixth non-item card should be blocked by slot count");
+
+let sizeIgnoredState = createMatchState(
+  "size-ignored",
+  {
+    id: "a",
+    name: "A",
+    deck: [
+      leader,
+      ...Array.from({ length: 4 }, (_, index) => unit(`size-slot-${index}`, 1, 2)),
+      { ...unit("huge-size-card", 1, 2), size: 99 },
+      { ...unit("zero-size-card", 1, 2), size: 0 },
+      ...Array.from({ length: 8 }, (_, index) => unit(`size-extra-${index}`, 1, 2)),
+    ],
+  },
+  { id: "b", name: "B", deck: deck("b-size-ignored") },
+  { seed: "size-ignored-seed", deterministic: true },
+);
+for (let index = 0; index < 4; index += 1) {
+  putCardOnBoard(sizeIgnoredState, 0, `size-slot-${index}`);
+}
+const hugeSizeCard = putCardInHand(sizeIgnoredState, 0, "huge-size-card");
+sizeIgnoredState.players[0].energyCurrent = 10;
+assert.equal(validateAction(sizeIgnoredState, {
+  type: "PLAY_CARD",
+  playerId: "a",
+  cardInstanceId: hugeSizeCard.instanceId,
+}).ok, true, "high-size cards should only use one of five board slots");
+sizeIgnoredState = applyAction(sizeIgnoredState, {
+  type: "PLAY_CARD",
+  playerId: "a",
+  cardInstanceId: hugeSizeCard.instanceId,
+});
+const zeroSizeCard = putCardInHand(sizeIgnoredState, 0, "zero-size-card");
+sizeIgnoredState.players[0].energyCurrent = 10;
+assert.deepEqual(validateAction(sizeIgnoredState, {
+  type: "PLAY_CARD",
+  playerId: "a",
+  cardInstanceId: zeroSizeCard.instanceId,
+}), { ok: false, reason: "Board is full. You can only have 5 cards in play." }, "zero-size cards should still need an open board slot");
+
 const loopPlayer = structuredClone(capped.players[1]);
 const loopCard = loopPlayer.deck[0];
 loopPlayer.hand = loopPlayer.hand.slice(0, 1);
